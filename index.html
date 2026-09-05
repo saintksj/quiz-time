@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>퀴즈타임 · 실시간 수업 퀴즈</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root{
+  --ink:#141043; --ink2:#221C6B; --ink3:#2E2785;
+  --yellow:#FFD23F; --coral:#FF5D8F; --mint:#3DDC97; --lav:#9B8CFF; --sky:#5AC8FA;
+  --paper:#F1F3FF; --line:rgba(255,255,255,.16);
+  --shadow:0 18px 40px rgba(6,3,40,.45);
+  --r-soft:18px; --r-pill:999px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  background:
+    radial-gradient(1200px 700px at 12% -10%, #3A2FA0 0%, transparent 55%),
+    radial-gradient(900px 600px at 105% 10%, #7A2E86 0%, transparent 50%),
+    var(--ink);
+  color:#fff; -webkit-font-smoothing:antialiased;
+  min-height:100dvh;
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:.25;
+  background-image:radial-gradient(rgba(255,255,255,.16) 1px, transparent 1px);
+  background-size:26px 26px;
+}
+.wrap{position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:20px 18px 64px}
+.screen{display:none; animation:fade .28s ease}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+h1,h2,h3{margin:0; font-weight:900; letter-spacing:-.02em; line-height:1.15}
+p{margin:0}
+button{font-family:inherit}
+
+/* ---- 홈 ---- */
+.brand{padding:56px 0 34px; text-align:center}
+.brand .mark{font-size:clamp(44px,9vw,86px); font-weight:900; letter-spacing:-.04em;
+  background:linear-gradient(100deg,var(--yellow),var(--coral) 45%,var(--lav));
+  -webkit-background-clip:text; background-clip:text; color:transparent}
+.brand .sub{margin-top:12px; color:#C9C4FF; font-size:17px; font-weight:500}
+.pick{display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:640px; margin:0 auto}
+@media(max-width:560px){.pick{grid-template-columns:1fr}}
+.pick button{
+  border:2px solid var(--line); background:rgba(255,255,255,.06); color:#fff;
+  border-radius:24px; padding:30px 20px; cursor:pointer; text-align:left;
+  transition:transform .16s ease, border-color .16s, background .16s;
+}
+.pick button:hover{transform:translateY(-3px); border-color:var(--yellow); background:rgba(255,255,255,.1)}
+.pick .em{font-size:34px; display:block; margin-bottom:10px}
+.pick .t{font-size:22px; font-weight:800; display:block}
+.pick .d{font-size:14px; color:#BDB7F0; margin-top:6px; display:block; font-weight:500}
+
+/* ---- 공통 요소 ---- */
+.card{background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:var(--r-soft); padding:20px; margin-bottom:16px; backdrop-filter:blur(6px)}
+.card h3{font-size:16px; color:#CFC9FF; font-weight:700; margin-bottom:14px}
+label{display:block; font-size:14px; font-weight:700; color:#CFC9FF; margin:0 0 7px}
+input[type=text],input[type=password],input[type=number],textarea,select{
+  width:100%; padding:13px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.22);
+  background:rgba(9,6,44,.55); color:#fff; font-size:16px; outline:none; font-weight:600;
+}
+textarea{min-height:82px; resize:vertical; line-height:1.5}
+input:focus,textarea:focus,select:focus{border-color:var(--yellow); box-shadow:0 0 0 3px rgba(255,210,63,.22)}
+input::placeholder,textarea::placeholder{color:#8A85C4; font-weight:500}
+select option{background:#1A1550}
+.row{display:flex; gap:10px; flex-wrap:wrap}
+.row>*{flex:1; min-width:120px}
+.btn{border:0; border-radius:var(--r-pill); padding:15px 26px; font-size:16px; font-weight:800; cursor:pointer; transition:transform .12s ease, filter .12s}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.45; cursor:not-allowed; transform:none}
+.btn-main{background:linear-gradient(95deg,var(--yellow),#FFB03A); color:#2A1B00; box-shadow:0 10px 24px rgba(255,176,58,.3)}
+.btn-go{background:linear-gradient(95deg,var(--mint),#19B67A); color:#04301F}
+.btn-hot{background:linear-gradient(95deg,var(--coral),#E13C74); color:#fff}
+.btn-ghost{background:rgba(255,255,255,.1); color:#fff; border:1px solid var(--line)}
+.btn-sm{padding:9px 16px; font-size:14px; border-radius:12px}
+.btn-block{width:100%}
+.hint{font-size:13px; color:#A9A3DC; line-height:1.6; font-weight:500}
+.err{color:#FF9AB5; font-size:14px; font-weight:700; margin-top:10px; min-height:20px}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0 18px}
+.topbar .back{background:none; border:0; color:#B4AEEB; font-size:15px; cursor:pointer; font-weight:700; padding:6px}
+
+/* ---- 문제 만들기 ---- */
+.qlist{display:flex; flex-direction:column; gap:10px}
+.qitem{display:flex; gap:12px; align-items:flex-start; background:rgba(9,6,44,.45); border:1px solid var(--line); border-radius:14px; padding:13px 14px}
+.qitem .no{width:30px; height:30px; flex:0 0 30px; border-radius:10px; display:grid; place-items:center; font-weight:900; font-size:14px; background:var(--lav); color:#160D45}
+.qitem .body{flex:1; min-width:0}
+.qitem .ttl{font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.qitem .meta{font-size:12.5px; color:#A9A3DC; margin-top:4px; font-weight:600}
+.qitem .acts{display:flex; gap:6px; flex-wrap:wrap}
+.tag{display:inline-block; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:800; margin-right:6px}
+.tag.t1{background:rgba(90,200,250,.2); color:#9BE0FF}
+.tag.t2{background:rgba(61,220,151,.2); color:#8DF3C6}
+.tag.t3{background:rgba(155,140,255,.24); color:#CFC6FF}
+.tag.x2{background:var(--yellow); color:#3A2700}
+.tag.x3{background:var(--coral); color:#fff}
+.typepick{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px}
+@media(max-width:560px){.typepick{grid-template-columns:1fr}}
+.typepick button{padding:13px 10px; border-radius:14px; border:2px solid var(--line); background:rgba(255,255,255,.05); color:#CFC9FF; cursor:pointer; font-weight:800; font-size:14px; text-align:left}
+.typepick button.sel{border-color:var(--yellow); background:rgba(255,210,63,.14); color:#fff}
+.typepick small{display:block; font-weight:600; font-size:11.5px; color:#A29CD8; margin-top:3px}
+.thumb{max-width:100%; max-height:190px; border-radius:12px; display:block; margin-top:10px; border:1px solid var(--line)}
+.opt-edit{display:flex; gap:10px; align-items:flex-start; padding:12px; border:1px solid var(--line); border-radius:14px; margin-bottom:10px; background:rgba(9,6,44,.4)}
+.opt-edit .k{width:30px; height:30px; flex:0 0 30px; border-radius:50%; display:grid; place-items:center; font-weight:900; background:rgba(255,255,255,.14)}
+.opt-edit .f{flex:1; min-width:0}
+.filebtn{display:inline-block; padding:8px 14px; border-radius:10px; background:rgba(255,255,255,.12); font-size:13.5px; font-weight:700; cursor:pointer; border:1px solid var(--line); margin-top:8px}
+.filebtn input{display:none}
+
+/* ---- 진행 화면 ---- */
+.livebar{display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:rgba(9,6,44,.55); border:1px solid var(--line); border-radius:var(--r-soft); padding:14px 16px; margin-bottom:16px}
+.code{font-size:30px; font-weight:900; letter-spacing:.14em; color:var(--yellow)}
+.livebar .lbl{font-size:12px; color:#A9A3DC; font-weight:700}
+.pill{background:rgba(255,255,255,.1); border-radius:999px; padding:7px 14px; font-weight:800; font-size:14px}
+.joinbox{display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center}
+@media(max-width:620px){.joinbox{grid-template-columns:1fr}}
+.linkrow{display:flex; gap:8px}
+.linkrow input{font-size:14px; font-weight:600}
+#qrbox{background:#fff; padding:10px; border-radius:14px; width:min(230px,60vw); display:grid; place-items:center}
+#qrbox canvas,#qrbox img{width:100%; height:auto; display:block; image-rendering:pixelated}
+.namechips{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; min-height:30px}
+.chip{background:rgba(255,255,255,.12); border:1px solid var(--line); padding:7px 13px; border-radius:999px; font-weight:700; font-size:14px}
+.chip.new{animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(.5); opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+.qhead{display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:12px}
+.qnum{font-size:14px; font-weight:800; color:#BDB7F0}
+.timer{position:relative; width:74px; height:74px; flex:0 0 74px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--mint) var(--p,100%), rgba(255,255,255,.14) 0)}
+.timer::after{content:""; position:absolute; inset:7px; border-radius:50%; background:#1A1450}
+.timer span{position:relative; z-index:1; font-size:23px; font-weight:900}
+.timer.warn{background:conic-gradient(var(--coral) var(--p,100%), rgba(255,255,255,.14) 0)}
+.qtext{font-size:clamp(22px,3.6vw,38px); font-weight:900; line-height:1.3; letter-spacing:-.02em}
+.qimg{max-width:100%; max-height:44vh; border-radius:16px; margin-top:16px; display:block; border:1px solid var(--line)}
+.bonus{display:inline-block; margin-bottom:12px; padding:8px 18px; border-radius:999px; font-weight:900; font-size:16px; animation:wob 1.1s ease-in-out infinite}
+.bonus.x2{background:var(--yellow); color:#3A2700}
+.bonus.x3{background:linear-gradient(95deg,var(--coral),#FF8A3D); color:#fff}
+@keyframes wob{0%,100%{transform:rotate(-2.5deg) scale(1)}50%{transform:rotate(2.5deg) scale(1.06)}}
+
+.opts{display:grid; gap:12px; margin-top:20px}
+.opt{display:flex; gap:14px; align-items:center; padding:16px; border-radius:16px; border:2px solid var(--line); background:rgba(255,255,255,.07); cursor:pointer; text-align:left; color:#fff; font-size:19px; font-weight:700; width:100%; transition:transform .12s, border-color .12s}
+.opt:hover{transform:translateY(-2px)}
+.opt .k{width:38px; height:38px; flex:0 0 38px; border-radius:50%; display:grid; place-items:center; font-weight:900; font-size:17px; color:#160D45}
+.opt:nth-child(1) .k{background:var(--sky)} .opt:nth-child(2) .k{background:var(--coral)} .opt:nth-child(3) .k{background:var(--mint)}
+.opt img{max-height:150px; max-width:100%; border-radius:10px; display:block}
+.opt.picked{border-color:var(--yellow); background:rgba(255,210,63,.16)}
+.opt.right{border-color:var(--mint); background:rgba(61,220,151,.2)}
+.opt.wrong{opacity:.4}
+.opt:disabled{cursor:default}
+
+#cloud, #scloud{position:relative; width:100%; height:400px; border-radius:var(--r-soft); border:1px dashed rgba(255,255,255,.22); background:rgba(9,6,44,.35); overflow:hidden; margin-top:16px}
+#scloud{height:260px}
+.cw{position:absolute; font-weight:900; white-space:nowrap; transition:all .5s cubic-bezier(.2,.8,.3,1); letter-spacing:-.02em; text-shadow:0 2px 10px rgba(0,0,0,.35)}
+.cw.pop{animation:cwin .5s ease}
+@keyframes cwin{from{transform:scale(.3); opacity:0}to{transform:scale(1); opacity:1}}
+.emptycloud{position:absolute; inset:0; display:grid; place-items:center; color:#8A85C4; font-weight:700}
+
+.rank{display:flex; flex-direction:column; gap:9px; margin-top:8px}
+.rankrow{display:flex; align-items:center; gap:14px; padding:13px 16px; border-radius:14px; background:rgba(255,255,255,.07); border:1px solid var(--line); font-weight:800; font-size:17px}
+.rankrow .n{width:32px; height:32px; flex:0 0 32px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.14); font-size:15px}
+.rankrow .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.rankrow .sc{color:var(--yellow); font-weight:900}
+.rankrow.me{border-color:var(--yellow); background:rgba(255,210,63,.14)}
+.rankrow:nth-child(1) .n{background:var(--yellow); color:#3A2700}
+.rankrow:nth-child(2) .n{background:#D7DDF5; color:#2A2A3A}
+.rankrow:nth-child(3) .n{background:#E09A5F; color:#3A1F00}
+
+.verdict{text-align:center; padding:26px 16px}
+.verdict .big{font-size:clamp(34px,8vw,64px); font-weight:900; letter-spacing:-.03em}
+.verdict .gain{font-size:24px; font-weight:900; color:var(--yellow); margin-top:8px}
+.verdict .ans{margin-top:14px; font-size:18px; color:#CFC9FF; font-weight:700}
+.ok .big{color:var(--mint)} .no .big{color:var(--coral)}
+.waiting{text-align:center; padding:54px 20px}
+.waiting .dots{font-size:40px; letter-spacing:6px; animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
+
+/* ---- 시상식 ---- */
+.podium{display:flex; justify-content:center; align-items:flex-end; gap:12px; margin:28px 0 10px; min-height:300px}
+.pod{flex:1; max-width:210px; text-align:center; opacity:0; transform:translateY(30px)}
+.pod.show{opacity:1; transform:none; transition:all .7s cubic-bezier(.2,.9,.3,1.2)}
+.pod .who{font-size:clamp(17px,2.6vw,24px); font-weight:900; margin-bottom:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pod .sc{font-weight:800; color:#D8D2FF; margin-bottom:10px; font-size:15px}
+.pod .block{border-radius:16px 16px 0 0; display:grid; place-items:center; font-size:40px; font-weight:900; color:#241800}
+.pod.p1 .block{background:linear-gradient(180deg,var(--yellow),#FFB03A); height:210px}
+.pod.p2 .block{background:linear-gradient(180deg,#E6EBFF,#B9C3E8); height:155px}
+.pod.p3 .block{background:linear-gradient(180deg,#F0A868,#D2793A); height:120px; color:#fff}
+#confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+.drum{text-align:center; font-size:clamp(22px,5vw,40px); font-weight:900; color:var(--yellow); letter-spacing:.02em; min-height:52px}
+.center{text-align:center}
+.sticky-ctrl{position:sticky; bottom:0; padding:14px 0 4px; background:linear-gradient(180deg,transparent,var(--ink) 34%); display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+.setup-warn{background:rgba(255,93,143,.16); border:1px solid rgba(255,93,143,.5); border-radius:14px; padding:16px; font-size:14px; line-height:1.7; font-weight:600}
+code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size:13px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+
+<!-- ===== 홈 ===== -->
+<section class="screen on" id="s-home">
+  <div class="brand">
+    <div class="mark">퀴즈타임</div>
+    <p class="sub">문제를 미리 만들어 두고, 학생은 폰·태블릿·PC로 참여합니다</p>
+  </div>
+  <div class="pick">
+    <button onclick="go('s-tlogin')">
+      <span class="em">🎬</span>
+      <span class="t">선생님으로 시작</span>
+      <span class="d">문항을 미리 등록해 두고 수업 때 진행합니다</span>
+    </button>
+    <button onclick="go('s-sjoin')">
+      <span class="em">✋</span>
+      <span class="t">학생으로 참여</span>
+      <span class="d">어떤 기기로든 방 번호와 닉네임만 입력하세요</span>
+    </button>
+  </div>
+  <div class="card" id="setup-note" style="margin-top:34px; display:none">
+    <div class="setup-warn" id="setup-note-body"></div>
+  </div>
+</section>
+
+<!-- ===== 선생님 로그인 ===== -->
+<section class="screen" id="s-tlogin">
+  <div class="topbar"><button class="back" onclick="go('s-home')">← 처음으로</button></div>
+  <div class="card" style="max-width:460px; margin:40px auto 0">
+    <h3>선생님 확인</h3>
+    <label for="tpw">비밀번호</label>
+    <input type="password" id="tpw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')teacherLogin()">
+    <div class="err" id="tpw-err"></div>
+    <button class="btn btn-main btn-block" style="margin-top:6px" onclick="teacherLogin()">들어가기</button>
+    <p class="hint" style="margin-top:14px">비밀번호는 파일 맨 아래 <code class="k">TEACHER_PASSWORD</code> 값에서 바꿀 수 있습니다.</p>
+  </div>
+</section>
+
+<!-- ===== 문제 만들기 ===== -->
+<section class="screen" id="s-build">
+  <div class="topbar">
+    <button class="back" onclick="go('s-home')">← 처음으로</button>
+    <div class="row" style="flex:0 0 auto">
+      <button class="btn btn-ghost btn-sm" onclick="exportQuiz()">파일로 저장</button>
+      <label class="filebtn" style="margin:0">불러오기<input type="file" accept="application/json" onchange="importQuiz(this)"></label>
+    </div>
+  </div>
+
+  <h1 style="font-size:28px; margin-bottom:6px">문제 만들기</h1>
+  <p class="hint" style="margin-bottom:18px">수업 전에 필요한 문항을 모두 등록해 두세요. 만든 문제는 이 브라우저에 자동 저장되고, 파일로 내보내 다른 반에서도 다시 쓸 수 있습니다.</p>
+
+  <div class="card">
+    <h3 id="editor-title">새 문제 추가</h3>
+    <div class="typepick" id="typepick">
+      <button data-t="1" onclick="setType(1)"><span>💭 생각 모으기</span><small>단어를 모아 구름으로 · 점수 없음</small></button>
+      <button data-t="2" onclick="setType(2)"><span>✏️ 주관식</span><small>답을 직접 입력</small></button>
+      <button data-t="3" onclick="setType(3)"><span>🔢 객관식</span><small>보기 3개 중 고르기</small></button>
+    </div>
+
+    <label for="e-text">질문</label>
+    <textarea id="e-text" placeholder="예) 오늘 배운 인공지능, 어떤 느낌이었나요?"></textarea>
+    <label class="filebtn">질문 이미지 넣기<input type="file" accept="image/*" onchange="pickImg(this,'q')"></label>
+    <button class="btn btn-ghost btn-sm" id="e-img-del" style="display:none; margin-left:8px" onclick="clearImg('q')">이미지 빼기</button>
+    <img class="thumb" id="e-img-prev" style="display:none">
+
+    <div id="e-opts" style="display:none; margin-top:18px">
+      <label>보기 3개 (정답은 왼쪽 동그라미를 눌러 선택)</label>
+      <div id="opt-edits"></div>
+    </div>
+
+    <div id="e-answer" style="display:none; margin-top:18px">
+      <label for="e-ans">정답 <span style="font-weight:600; color:#A9A3DC">· 여러 개면 쉼표로 구분</span></label>
+      <input type="text" id="e-ans" placeholder="예) 머신러닝, 기계학습">
+      <p class="hint" style="margin-top:6px">띄어쓰기와 대소문자는 무시하고 채점합니다.</p>
+    </div>
+
+    <div id="e-scoring" style="display:none; margin-top:18px">
+      <div class="row">
+        <div><label for="e-pt">기본 점수</label><input type="number" id="e-pt" value="100" min="0" step="10"></div>
+        <div><label for="e-mul">점수 배수</label>
+          <select id="e-mul"><option value="1">1배 (기본)</option><option value="2">2배!</option><option value="3">3배!!</option></select>
+        </div>
+        <div><label for="e-time">제한 시간(초)</label><input type="number" id="e-time" value="20" min="0" step="5"></div>
+      </div>
+      <p class="hint" style="margin-top:8px">제한 시간을 <strong>0</strong>으로 두면 선생님이 직접 끝낼 때까지 기다립니다.</p>
+    </div>
+
+    <div class="err" id="e-err"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn btn-main" onclick="saveQuestion()" id="e-save">문제 추가</button>
+      <button class="btn btn-ghost" onclick="resetEditor()">지우기</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>문제 목록 <span id="qcount" class="pill" style="margin-left:6px">0개</span></h3>
+    <div class="qlist" id="qlist"></div>
+    <p class="hint" id="qlist-empty">아직 문제가 없습니다. 위에서 첫 문제를 추가하세요.</p>
+  </div>
+
+  <div class="sticky-ctrl">
+    <button class="btn btn-go" onclick="openRoom()" id="btn-open">퀴즈방 열기</button>
+  </div>
+</section>
+
+<!-- ===== 선생님 진행 ===== -->
+<section class="screen" id="s-tlive">
+  <div class="livebar">
+    <div>
+      <div class="lbl">방 번호</div>
+      <div class="code" id="t-code">----</div>
+    </div>
+    <div class="pill" id="t-count">참가 0명</div>
+    <div class="pill" id="t-prog" style="display:none">1 / 1</div>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost btn-sm" onclick="toggleJoinPanel()" id="btn-joinpanel">참여 링크 보기</button>
+    <button class="btn btn-ghost btn-sm" onclick="quitRoom()">방 닫기</button>
+  </div>
+
+  <div class="card" id="t-joinpanel">
+    <h3>학생 참여 안내</h3>
+    <div class="joinbox">
+      <div>
+        <label for="t-link">폰·태블릿·PC 어디서나 이 링크로 접속하면 방 번호가 자동으로 채워집니다</label>
+        <div class="linkrow">
+          <input type="text" id="t-link" readonly>
+          <button class="btn btn-main btn-sm" onclick="copyLink()" id="btn-copy">복사</button>
+        </div>
+        <p class="hint" style="margin-top:12px">링크가 안 열리면 학생 화면에서 방 번호 <strong id="t-code2"></strong> 를 직접 입력하면 됩니다.</p>
+      </div>
+      <div id="qrbox"></div>
+    </div>
+  </div>
+
+  <div id="t-lobby">
+    <div class="card">
+      <h3>들어온 학생</h3>
+      <div class="namechips" id="t-names"></div>
+      <p class="hint" id="t-nonames">아직 아무도 들어오지 않았습니다.</p>
+    </div>
+    <div class="sticky-ctrl"><button class="btn btn-go" onclick="startQuiz()">퀴즈 시작</button></div>
+  </div>
+
+  <div id="t-play" style="display:none">
+    <div class="card">
+      <div class="qhead">
+        <div>
+          <div class="qnum" id="t-qnum"></div>
+          <div id="t-bonus"></div>
+        </div>
+        <div class="timer" id="t-timer" style="display:none"><span>0</span></div>
+      </div>
+      <div class="qtext" id="t-qtext"></div>
+      <img class="qimg" id="t-qimg" style="display:none">
+      <div id="t-opts" class="opts"></div>
+      <div id="cloud" style="display:none"></div>
+      <div class="pill" id="t-answered" style="margin-top:18px; display:inline-block">답변 0명</div>
+    </div>
+    <div class="sticky-ctrl" id="t-playctrl"></div>
+  </div>
+
+  <div id="t-closed" style="display:none">
+    <div class="card">
+      <h3 id="t-revealttl">정답</h3>
+      <div class="qtext" id="t-reveal"></div>
+    </div>
+    <div class="card">
+      <h3>지금 순위 (상위 5명)</h3>
+      <div class="rank" id="t-rank"></div>
+    </div>
+    <div class="sticky-ctrl" id="t-closedctrl"></div>
+  </div>
+
+  <div id="t-final" style="display:none">
+    <div class="center" style="padding:10px 0 4px"><div class="drum" id="t-drum"></div></div>
+    <div class="podium" id="t-podium"></div>
+    <div class="card" style="margin-top:24px"><h3>전체 순위</h3><div class="rank" id="t-fullrank"></div></div>
+    <div class="sticky-ctrl">
+      <button class="btn btn-ghost" onclick="replayCeremony()">다시 보기</button>
+      <button class="btn btn-main" onclick="quitRoom()">퀴즈 끝내기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 학생 입장 ===== -->
+<section class="screen" id="s-sjoin">
+  <div class="topbar"><button class="back" onclick="go('s-home')">← 처음으로</button></div>
+  <div class="card" style="max-width:460px; margin:36px auto 0">
+    <h3>퀴즈방 입장</h3>
+    <label for="s-code">방 번호</label>
+    <input type="text" id="s-code" inputmode="numeric" maxlength="6" placeholder="예) 4821" style="font-size:26px; letter-spacing:.16em; text-align:center; font-weight:900">
+    <label for="s-nick" style="margin-top:16px">닉네임</label>
+    <input type="text" id="s-nick" maxlength="12" placeholder="친구들이 볼 이름" onkeydown="if(event.key==='Enter')joinRoom()">
+    <div class="err" id="s-err"></div>
+    <button class="btn btn-go btn-block" style="margin-top:6px" onclick="joinRoom()" id="btn-join">입장하기</button>
+  </div>
+</section>
+
+<!-- ===== 학생 진행 ===== -->
+<section class="screen" id="s-slive">
+  <div class="livebar">
+    <div><div class="lbl">내 닉네임</div><div style="font-weight:900; font-size:19px" id="s-me"></div></div>
+    <div style="flex:1"></div>
+    <div class="pill" id="s-score">0점</div>
+  </div>
+
+  <div id="st-wait" class="card">
+    <div class="waiting">
+      <div class="dots">● ● ●</div>
+      <h2 style="margin-top:18px; font-size:22px" id="st-waittxt">선생님이 퀴즈를 시작할 때까지 기다려요</h2>
+    </div>
+  </div>
+
+  <div id="st-play" style="display:none">
+    <div class="card">
+      <div class="qhead">
+        <div><div class="qnum" id="s-qnum"></div><div id="s-bonus"></div></div>
+        <div class="timer" id="s-timer" style="display:none"><span>0</span></div>
+      </div>
+      <div class="qtext" id="s-qtext"></div>
+      <img class="qimg" id="s-qimg" style="display:none">
+
+      <div id="s-word" style="display:none; margin-top:18px">
+        <div class="linkrow">
+          <input type="text" id="s-wordin" maxlength="14" placeholder="떠오르는 단어 한 개" onkeydown="if(event.key==='Enter')sendWord()">
+          <button class="btn btn-main btn-sm" onclick="sendWord()">보내기</button>
+        </div>
+        <p class="hint" style="margin-top:8px">여러 번 보내도 괜찮아요. 친구들 단어가 실시간으로 모입니다.</p>
+        <div id="scloud"></div>
+      </div>
+
+      <div id="s-short" style="display:none; margin-top:18px">
+        <input type="text" id="s-shortin" maxlength="40" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter')sendShort()">
+        <button class="btn btn-go btn-block" style="margin-top:12px" onclick="sendShort()" id="s-shortbtn">제출</button>
+      </div>
+
+      <div id="s-choice" class="opts" style="display:none"></div>
+      <div class="center" id="s-sent" style="display:none; padding:20px 0 4px">
+        <div style="font-size:38px">✅</div>
+        <p style="font-weight:800; margin-top:8px; font-size:18px">제출 완료! 친구들을 기다려요</p>
+        <p class="hint" id="s-sentval" style="margin-top:6px"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="st-closed" style="display:none">
+    <div class="card"><div class="verdict" id="s-verdict"></div></div>
+    <div class="card"><h3>지금 순위 (상위 5명)</h3><div class="rank" id="s-rank"></div></div>
+  </div>
+
+  <div id="st-final" style="display:none">
+    <div class="center" style="padding:10px 0 4px"><div class="drum" id="s-drum"></div></div>
+    <div class="podium" id="s-podium"></div>
+    <div class="card" style="margin-top:24px"><h3>내 결과</h3><div class="rank" id="s-myrank"></div></div>
+  </div>
+</section>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ==========================================================
+   ① 여기만 채우면 됩니다
+   Firebase 콘솔 → 프로젝트 설정 → 웹 앱 → firebaseConfig 복사
+   Realtime Database를 만들고 databaseURL 을 꼭 포함하세요.
+   ========================================================== */
+ const firebaseConfig = {
+    apiKey: "AIzaSyCH7hx2_E1HnNLLE9bpHnh69rRutQSoWGY",
+    authDomain: "quiz-time-429b1.firebaseapp.com",
+    databaseURL: "https://quiz-time-429b1-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "quiz-time-429b1",
+    storageBucket: "quiz-time-429b1.firebasestorage.app",
+    messagingSenderId: "535994089376",
+    appId: "1:535994089376:web:608b8ea27597ad308ceec5"
+  };
+const TEACHER_PASSWORD = "4312";   // 선생님 화면 비밀번호
+const USE_ANONYMOUS_AUTH = true;   // Firebase 인증 > 익명 로그인을 켰다면 true
+
+/* ========================================================== */
+
+let db=null, uid=null, ready=false;
+let role=null, roomCode=null;
+let quiz=[];                 // 선생님용 원본(정답 포함)
+let pub=[];                  // 학생에게 공개되는 문제(정답 제외)
+let players={}, answers={}, words={}, st=null;
+let refs=[], tickInt=null, autoTO=null, lastKey='', ceremonyKey='';
+let myNick='', muted=false;
+
+/* ---------- 화면 전환 ---------- */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo({top:0});
+}
+
+/* ---------- 소리 ---------- */
+const sfx=(()=>{
+  let ac=null;
+  function ctx(){ if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}} if(ac.state==='suspended')ac.resume(); return ac; }
+  function tone(f,at,dur,type,vol){
+    if(muted) return; const c=ctx(); if(!c) return;
+    const t=c.currentTime+at, o=c.createOscillator(), g=c.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol||.16,t+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.03);
+  }
+  function noise(at,dur,vol){
+    if(muted) return; const c=ctx(); if(!c) return;
+    const n=c.sampleRate*dur, b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+    const s=c.createBufferSource(), g=c.createGain();
+    s.buffer=b; g.gain.value=vol||.12; s.connect(g); g.connect(c.destination); s.start(c.currentTime+at);
+  }
+  return {
+    unlock(){ctx();},
+    join(){tone(660,0,.12,'triangle',.12); tone(990,.09,.14,'triangle',.1);},
+    start(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.22,'triangle',.15));},
+    tick(){tone(880,0,.05,'square',.06);},
+    hurry(){tone(1100,0,.07,'square',.11);},
+    send(){tone(740,0,.08,'sine',.12);},
+    word(){tone(520+Math.random()*400,0,.1,'sine',.09);},
+    correct(){[784,988,1319].forEach((f,i)=>tone(f,i*.08,.26,'triangle',.16));},
+    wrong(){tone(300,0,.18,'sawtooth',.12); tone(190,.14,.3,'sawtooth',.1);},
+    reveal(){tone(392,0,.14,'triangle',.14); tone(523,.12,.2,'triangle',.14);},
+    drum(){for(let i=0;i<16;i++) noise(i*.07,.06,.09);},
+    fanfare(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,i*.13,.5,'triangle',.18)); noise(.6,.5,.1);}
+  };
+})();
+document.addEventListener('pointerdown',()=>sfx.unlock(),{once:true});
+
+/* ---------- 초기화 ---------- */
+(function init(){
+  const bad = !firebaseConfig.databaseURL || firebaseConfig.databaseURL.indexOf('여기에')>=0;
+  if(bad){
+    document.getElementById('setup-note').style.display='block';
+    document.getElementById('setup-note-body').innerHTML =
+      '<strong>먼저 Firebase 설정이 필요합니다.</strong><br>'+
+      '1. Firebase 콘솔에서 프로젝트를 만들고 <b>Realtime Database</b>를 생성합니다.<br>'+
+      '2. 웹 앱을 추가해 <code class="k">firebaseConfig</code> 값을 복사합니다.<br>'+
+      '3. 이 파일 아래쪽 <code class="k">const firebaseConfig</code> 부분에 붙여넣고 저장합니다.<br>'+
+      '4. 인증 &gt; 로그인 방법에서 <b>익명</b>을 사용 설정합니다.<br>'+
+      '5. 규칙 예시: <code class="k">{"rules":{"rooms":{".read":"auth != null",".write":"auth != null"}}}</code>';
+    return;
+  }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+  }catch(e){ alert('Firebase 연결에 실패했습니다: '+e.message); return; }
+
+  uid = localStorage.getItem('qz_uid') || ('u'+Math.random().toString(36).slice(2,10));
+  localStorage.setItem('qz_uid',uid);
+
+  if(USE_ANONYMOUS_AUTH){
+    firebase.auth().signInAnonymously().then(c=>{ uid=c.user.uid; ready=true; })
+      .catch(e=>{ ready=true; console.warn('익명 로그인 실패, 로컬 ID로 진행합니다.',e.message); });
+  } else ready=true;
+
+  loadLocal(); renderQList(); setType(1);
+  const p=new URLSearchParams(location.search).get('room');
+  if(p){ document.getElementById('s-code').value=p.replace(/\D/g,''); go('s-sjoin');
+    const n=localStorage.getItem('qz_nick'); if(n) document.getElementById('s-nick').value=n;
+    setTimeout(()=>document.getElementById('s-nick').focus(),200); }
+  addMuteButton();
+})();
+
+function addMuteButton(){
+  const b=document.createElement('button');
+  b.textContent='🔊'; b.title='소리 끄기/켜기';
+  b.style.cssText='position:fixed;right:16px;bottom:16px;z-index:70;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(20,16,67,.85);color:#fff;font-size:20px;cursor:pointer';
+  b.onclick=()=>{muted=!muted; b.textContent=muted?'🔇':'🔊';};
+  document.body.appendChild(b);
+}
+
+/* ---------- 선생님 로그인 ---------- */
+function teacherLogin(){
+  const v=document.getElementById('tpw').value;
+  if(v!==TEACHER_PASSWORD){ document.getElementById('tpw-err').textContent='비밀번호가 다릅니다.'; return; }
+  document.getElementById('tpw-err').textContent='';
+  const saved=localStorage.getItem('qz_room');
+  if(saved && confirm('열려 있던 '+saved+'번 방으로 다시 들어갈까요?')){ role='t'; roomCode=saved; enterRoomUI(); watchRoom(); return; }
+  go('s-build');
+}
+
+/* ================= 문제 만들기 ================= */
+let ed={type:1,img:null,opts:[{text:'',img:null},{text:'',img:null},{text:'',img:null}],correct:0,idx:-1};
+
+function setType(t){
+  ed.type=t;
+  document.querySelectorAll('#typepick button').forEach(b=>b.classList.toggle('sel',+b.dataset.t===t));
+  document.getElementById('e-opts').style.display = t===3?'block':'none';
+  document.getElementById('e-answer').style.display = t===2?'block':'none';
+  document.getElementById('e-scoring').style.display = t===1?'none':'block';
+  document.getElementById('e-text').placeholder = t===1
+    ? '예) 오늘 배운 인공지능, 어떤 느낌이었나요?'
+    : (t===2 ? '예) 사람의 학습을 흉내 낸 기술을 무엇이라 하나요?' : '예) 다음 중 인공지능이 한 일은?');
+  if(t===3) renderOptEdits();
+}
+
+function renderOptEdits(){
+  const box=document.getElementById('opt-edits'); box.innerHTML='';
+  ['1','2','3'].forEach((k,i)=>{
+    const o=ed.opts[i];
+    const d=document.createElement('div'); d.className='opt-edit';
+    d.innerHTML =
+      '<button class="k" title="정답으로 선택" style="cursor:pointer;border:0;'+(ed.correct===i?'background:var(--mint);color:#04301F':'')+'">'+(ed.correct===i?'✓':k)+'</button>'+
+      '<div class="f">'+
+        '<input type="text" placeholder="보기 '+k+' 내용" value="'+(o.text||'').replace(/"/g,'&quot;')+'">'+
+        '<label class="filebtn">보기 이미지<input type="file" accept="image/*"></label>'+
+        (o.img?'<button class="btn btn-ghost btn-sm" style="margin-left:8px">이미지 빼기</button><img class="thumb" src="'+o.img+'" style="max-height:120px">':'')+
+      '</div>';
+    d.querySelector('.k').onclick=()=>{ed.correct=i; renderOptEdits();};
+    d.querySelector('input[type=text]').oninput=e=>{ed.opts[i].text=e.target.value;};
+    d.querySelector('input[type=file]').onchange=e=>pickImg(e.target,'o',i);
+    const rm=d.querySelector('button.btn-ghost'); if(rm) rm.onclick=()=>clearImg('o',i);
+    box.appendChild(d);
+  });
+}
+
+function compress(file,max,q){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const im=new Image();
+      im.onload=()=>{ let w=im.width,h=im.height; const s=Math.min(1,(max||900)/Math.max(w,h));
+        w=Math.round(w*s); h=Math.round(h*s);
+        const c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(im,0,0,w,h);
+        res(c.toDataURL('image/jpeg',q||.7)); };
+      im.onerror=rej; im.src=fr.result; };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+async function pickImg(input,which,i){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const data=await compress(f, which==='q'?1000:700, .7);
+  if(which==='q'){ ed.img=data;
+    const p=document.getElementById('e-img-prev'); p.src=data; p.style.display='block';
+    document.getElementById('e-img-del').style.display='inline-block';
+  } else { ed.opts[i].img=data; renderOptEdits(); }
+  input.value='';
+}
+function clearImg(which,i){
+  if(which==='q'){ ed.img=null;
+    document.getElementById('e-img-prev').style.display='none';
+    document.getElementById('e-img-del').style.display='none';
+  } else { ed.opts[i].img=null; renderOptEdits(); }
+}
+
+function saveQuestion(){
+  const err=document.getElementById('e-err'); err.textContent='';
+  const text=document.getElementById('e-text').value.trim();
+  if(!text && !ed.img){ err.textContent='질문 내용이나 이미지를 넣어주세요.'; return; }
+  const q={type:ed.type, text:text, img:ed.img||null};
+  if(ed.type!==1){
+    q.points=Math.max(0,parseInt(document.getElementById('e-pt').value||'0',10));
+    q.mult=parseInt(document.getElementById('e-mul').value,10);
+    q.time=Math.max(0,parseInt(document.getElementById('e-time').value||'0',10));
+  }
+  if(ed.type===2){
+    const a=document.getElementById('e-ans').value.trim();
+    if(!a){ err.textContent='정답을 입력해야 채점할 수 있습니다.'; return; }
+    q.answer=a;
+  }
+  if(ed.type===3){
+    for(let i=0;i<3;i++) if(!ed.opts[i].text && !ed.opts[i].img){ err.textContent='보기 '+(i+1)+'의 내용이 비어 있습니다.'; return; }
+    q.opts=ed.opts.map(o=>({text:o.text||'', img:o.img||null}));
+    q.correct=ed.correct;
+  }
+  if(ed.idx>=0) quiz[ed.idx]=q; else quiz.push(q);
+  saveLocal(); renderQList(); resetEditor(); sfx.send();
+}
+function resetEditor(){
+  ed={type:ed.type,img:null,opts:[{text:'',img:null},{text:'',img:null},{text:'',img:null}],correct:0,idx:-1};
+  document.getElementById('e-text').value='';
+  document.getElementById('e-ans').value='';
+  document.getElementById('e-pt').value=100;
+  document.getElementById('e-mul').value=1;
+  document.getElementById('e-time').value=20;
+  document.getElementById('e-img-prev').style.display='none';
+  document.getElementById('e-img-del').style.display='none';
+  document.getElementById('e-err').textContent='';
+  document.getElementById('editor-title').textContent='새 문제 추가';
+  document.getElementById('e-save').textContent='문제 추가';
+  setType(ed.type); renderOptEdits();
+}
+function editQuestion(i){
+  const q=quiz[i];
+  ed.idx=i; ed.img=q.img||null; ed.correct=q.correct||0;
+  ed.opts = q.opts? q.opts.map(o=>({text:o.text,img:o.img})) : [{text:'',img:null},{text:'',img:null},{text:'',img:null}];
+  setType(q.type);
+  document.getElementById('e-text').value=q.text||'';
+  document.getElementById('e-ans').value=q.answer||'';
+  if(q.type!==1){
+    document.getElementById('e-pt').value=q.points; document.getElementById('e-mul').value=q.mult; document.getElementById('e-time').value=q.time;
+  }
+  const p=document.getElementById('e-img-prev');
+  if(q.img){p.src=q.img;p.style.display='block';document.getElementById('e-img-del').style.display='inline-block';}
+  else {p.style.display='none';document.getElementById('e-img-del').style.display='none';}
+  if(q.type===3) renderOptEdits();
+  document.getElementById('editor-title').textContent=(i+1)+'번 문제 고치기';
+  document.getElementById('e-save').textContent='수정 저장';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function delQuestion(i){ if(!confirm((i+1)+'번 문제를 지울까요?')) return; quiz.splice(i,1); saveLocal(); renderQList(); }
+function moveQ(i,d){ const j=i+d; if(j<0||j>=quiz.length) return; const t=quiz[i]; quiz[i]=quiz[j]; quiz[j]=t; saveLocal(); renderQList(); }
+
+const TYPENAME={1:'생각 모으기',2:'주관식',3:'객관식'};
+function renderQList(){
+  const box=document.getElementById('qlist'); box.innerHTML='';
+  document.getElementById('qcount').textContent=quiz.length+'개';
+  document.getElementById('qlist-empty').style.display=quiz.length?'none':'block';
+  document.getElementById('btn-open').disabled=!quiz.length;
+  quiz.forEach((q,i)=>{
+    const d=document.createElement('div'); d.className='qitem';
+    let meta='<span class="tag t'+q.type+'">'+TYPENAME[q.type]+'</span>';
+    if(q.type!==1){
+      meta+=q.points+'점';
+      if(q.mult>1) meta+=' <span class="tag x'+q.mult+'">'+q.mult+'배!</span>';
+      meta+=' · '+(q.time>0? q.time+'초':'시간 무제한');
+      if(q.type===2) meta+=' · 정답 '+q.answer;
+      if(q.type===3) meta+=' · 정답 '+(q.correct+1)+'번';
+    } else meta+='실시간 단어 구름';
+    d.innerHTML='<div class="no">'+(i+1)+'</div><div class="body"><div class="ttl">'+
+      (q.text? esc(q.text) : '(이미지 문제)')+(q.img?' 🖼':'')+'</div><div class="meta">'+meta+'</div></div>'+
+      '<div class="acts"><button class="btn btn-ghost btn-sm" onclick="moveQ('+i+',-1)">↑</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="moveQ('+i+',1)">↓</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="editQuestion('+i+')">고치기</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="delQuestion('+i+')">삭제</button></div>';
+    box.appendChild(d);
+  });
+}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function saveLocal(){ try{localStorage.setItem('qz_quiz',JSON.stringify(quiz));}catch(e){} }
+function loadLocal(){ try{quiz=JSON.parse(localStorage.getItem('qz_quiz')||'[]');}catch(e){quiz=[];} }
+function exportQuiz(){
+  const b=new Blob([JSON.stringify(quiz)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='퀴즈_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+}
+function importQuiz(input){
+  const f=input.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{ try{ const d=JSON.parse(fr.result);
+      if(!Array.isArray(d)) throw 0;
+      if(quiz.length && !confirm('지금 문제들을 지우고 불러올까요?')) return;
+      quiz=d; saveLocal(); renderQList(); }catch(e){ alert('퀴즈 파일을 읽을 수 없습니다.'); } };
+  fr.readAsText(f); input.value='';
+}
+
+/* ================= 방 열기 / 진행 (선생님) ================= */
+function publicQuiz(){
+  return quiz.map(q=>{
+    const o={type:q.type, text:q.text||'', img:q.img||null};
+    if(q.type!==1){ o.points=q.points; o.mult=q.mult; o.time=q.time; }
+    if(q.type===3) o.opts=q.opts.map(x=>({text:x.text||'', img:x.img||null}));
+    return o;
+  });
+}
+async function openRoom(){
+  if(!db){ alert('Firebase 설정을 먼저 채워주세요.'); return; }
+  if(!quiz.length) return;
+  const p=publicQuiz();
+  const size=JSON.stringify(p).length;
+  if(size>4000000){ alert('이미지가 너무 큽니다. 이미지를 줄이거나 개수를 줄여주세요.'); return; }
+  role='t';
+  roomCode=String(Math.floor(1000+Math.random()*9000));
+  await db.ref('rooms/'+roomCode).set({
+    info:{createdAt:firebase.database.ServerValue.TIMESTAMP},
+    quiz:p,
+    state:{phase:'lobby', qIndex:-1, deadline:0}
+  });
+  localStorage.setItem('qz_room',roomCode);
+  enterRoomUI(); watchRoom();
+}
+function enterRoomUI(){
+  go('s-tlive');
+  document.getElementById('t-code').textContent=roomCode;
+  document.getElementById('t-code2').textContent=roomCode;
+  const link=location.origin+location.pathname+'?room='+roomCode;
+  document.getElementById('t-link').value=link;
+  const box=document.getElementById('qrbox'); box.innerHTML='';
+  if(window.QRCode&&QRCode.toCanvas){
+    const c=document.createElement('canvas'); box.appendChild(c);
+    QRCode.toCanvas(c,link,{width:220,margin:1,color:{dark:'#141043',light:'#ffffff'}},e=>{ if(e) qrFallback(box,link); });
+  } else qrFallback(box,link);
+}
+function qrFallback(box,link){
+  box.innerHTML='<img alt="참여 QR 코드" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(link)+'">';
+}
+function toggleJoinPanel(){
+  const p=document.getElementById('t-joinpanel');
+  const open=p.style.display!=='none';
+  p.style.display=open?'none':'block';
+  document.getElementById('btn-joinpanel').textContent=open?'참여 링크 보기':'참여 링크 숨기기';
+}
+function copyLink(){
+  const i=document.getElementById('t-link');
+  navigator.clipboard.writeText(i.value).then(()=>{
+    const b=document.getElementById('btn-copy'); b.textContent='복사됨';
+    setTimeout(()=>b.textContent='복사',1500);
+  }).catch(()=>{ i.select(); document.execCommand('copy'); });
+}
+function quitRoom(){
+  if(role==='t' && roomCode && !confirm('방을 닫을까요? 학생 화면도 종료됩니다.')) return;
+  if(role==='t' && roomCode){ db.ref('rooms/'+roomCode).remove(); localStorage.removeItem('qz_room'); }
+  detach(); roomCode=null; role=null; players={}; answers={}; words={}; st=null; lastKey=''; ceremonyKey='';
+  go('s-home');
+}
+function detach(){ refs.forEach(r=>r.ref.off(r.ev,r.cb)); refs=[]; clearInterval(tickInt); clearTimeout(autoTO); tickInt=null; }
+function listen(path,cb){ const r=db.ref('rooms/'+roomCode+'/'+path); const f=r.on('value',s=>cb(s.val())); refs.push({ref:r,ev:'value',cb:f}); }
+
+function watchRoom(){
+  detach();
+  listen('quiz', v=>{ pub=v||[]; if(role==='t'&&!quiz.length) quiz=pub; paint(false); });
+  listen('players', v=>{ players=v||{}; paintPlayers(); });
+  listen('state', v=>{
+    if(v===null && role==='s'){ alert('선생님이 방을 닫았습니다.'); detach(); go('s-home'); return; }
+    st=v; onState();
+  });
+  if(!tickInt) tickInt=setInterval(tickTimer,250);
+}
+function watchQuestion(i){
+  ['answers','words'].forEach(k=>{});
+  const ar=db.ref('rooms/'+roomCode+'/answers/'+i);
+  const af=ar.on('value',s=>{ answers=s.val()||{}; paintAnswers(); tryVerdict(); });
+  refs.push({ref:ar,ev:'value',cb:af});
+  const wr=db.ref('rooms/'+roomCode+'/words/'+i);
+  const wf=wr.on('value',s=>{ const v=s.val()||{}; const grew=Object.keys(v).length>Object.keys(words).length; words=v; paintCloud(); if(grew)sfx.word(); });
+  refs.push({ref:wr,ev:'value',cb:wf});
+}
+function unwatchQuestion(){
+  refs=refs.filter(r=>{
+    const p=r.ref.toString();
+    if(p.indexOf('/answers/')>=0||p.indexOf('/words/')>=0){ r.ref.off(r.ev,r.cb); return false; }
+    return true;
+  });
+  answers={}; words={};
+}
+
+/* ---------- 상태 변화 ---------- */
+function onState(){
+  if(!st) return;
+  const key=st.phase+'#'+st.qIndex;
+  const fresh=key!==lastKey;
+  if(fresh){
+    if(st.phase==='q'){ unwatchQuestion(); watchQuestion(st.qIndex); }
+    if(st.phase==='lobby'||st.phase==='final') unwatchQuestion();
+    lastKey=key;
+  }
+  paint(fresh);
+}
+
+function startQuiz(){ gotoQ(0); sfx.start(); }
+function gotoQ(i){
+  if(i>=quiz.length){ finishQuiz(); return; }
+  const q=quiz[i];
+  const dl = (q.type!==1 && q.time>0) ? Date.now()+q.time*1000 : 0;
+  db.ref('rooms/'+roomCode+'/state').set({phase:'q', qIndex:i, deadline:dl, reveal:null});
+}
+function nextQuestion(){ gotoQ((st?st.qIndex:-1)+1); }
+async function closeQuestion(){
+  if(role!=='t'||!st||st.phase!=='q') return;
+  clearTimeout(autoTO);
+  const i=st.qIndex, q=quiz[i];
+  if(q.type===1){ nextQuestion(); return; }
+  const snap=await db.ref('rooms/'+roomCode+'/answers/'+i).once('value');
+  const a=snap.val()||{}, up={};
+  Object.keys(a).forEach(u=>{
+    const ok=judge(q,a[u].v), gain= ok? Math.round(q.points*(q.mult||1)) : 0;
+    up['rooms/'+roomCode+'/answers/'+i+'/'+u+'/ok']=ok;
+    up['rooms/'+roomCode+'/answers/'+i+'/'+u+'/gain']=gain;
+    if(gain) up['rooms/'+roomCode+'/players/'+u+'/score']=(((players[u]||{}).score)||0)+gain;
+  });
+  up['rooms/'+roomCode+'/state/phase']='closed';
+  up['rooms/'+roomCode+'/state/deadline']=0;
+  up['rooms/'+roomCode+'/state/reveal']= q.type===3
+    ? {idx:q.correct, text:(q.opts[q.correct].text || (q.correct+1)+'번 그림')}
+    : {text:q.answer};
+  await db.ref().update(up);
+  sfx.reveal();
+}
+function finishQuiz(){ db.ref('rooms/'+roomCode+'/state').set({phase:'final', qIndex:quiz.length, deadline:0}); }
+function norm(s){ return (s==null?'':String(s)).trim().toLowerCase().replace(/\s+/g,''); }
+function judge(q,v){
+  if(q.type===3) return Number(v)===Number(q.correct);
+  return String(q.answer||'').split(/[,/]/).map(norm).filter(Boolean).indexOf(norm(v))>=0;
+}
+
+/* ================= 학생 ================= */
+function joinRoom(){
+  if(!db){ alert('Firebase 설정을 먼저 채워주세요.'); return; }
+  const code=document.getElementById('s-code').value.replace(/\D/g,'');
+  const nick=document.getElementById('s-nick').value.trim().slice(0,12);
+  const err=document.getElementById('s-err'); err.textContent='';
+  if(code.length<4){ err.textContent='방 번호 4자리를 입력하세요.'; return; }
+  if(!nick){ err.textContent='닉네임을 입력하세요.'; return; }
+  document.getElementById('btn-join').disabled=true;
+  db.ref('rooms/'+code+'/state').once('value').then(s=>{
+    if(!s.exists()){ err.textContent='그런 방이 없습니다. 번호를 확인해 주세요.'; document.getElementById('btn-join').disabled=false; return; }
+    role='s'; roomCode=code; myNick=nick;
+    localStorage.setItem('qz_nick',nick);
+    const pref=db.ref('rooms/'+code+'/players/'+uid);
+    return pref.once('value').then(ps=>pref.update({nick:nick, score:((ps.val()||{}).score)||0})).then(()=>{
+      document.getElementById('s-me').textContent=nick;
+      go('s-slive'); watchRoom(); sfx.join();
+      document.getElementById('btn-join').disabled=false;
+    });
+  }).catch(e=>{ err.textContent='입장 실패: '+e.message; document.getElementById('btn-join').disabled=false; });
+}
+function sendWord(){
+  const el=document.getElementById('s-wordin');
+  const w=el.value.trim().slice(0,14);
+  if(!w||!st) return;
+  db.ref('rooms/'+roomCode+'/words/'+st.qIndex).push({w:w, n:myNick});
+  el.value=''; sfx.send();
+}
+function sendShort(){
+  const el=document.getElementById('s-shortin'); const v=el.value.trim();
+  if(!v||!st) return;
+  db.ref('rooms/'+roomCode+'/answers/'+st.qIndex+'/'+uid).set({v:v, n:myNick, at:Date.now()});
+  sfx.send(); showSent(v);
+}
+function sendChoice(i){
+  if(!st) return;
+  db.ref('rooms/'+roomCode+'/answers/'+st.qIndex+'/'+uid).set({v:i, n:myNick, at:Date.now()});
+  sfx.send();
+  document.querySelectorAll('#s-choice .opt').forEach((b,k)=>{ b.classList.toggle('picked',k===i); b.disabled=true; });
+  const q=pub[st.qIndex];
+  showSent(q.opts[i].text || (i+1)+'번');
+}
+function showSent(v){
+  document.getElementById('s-short').style.display='none';
+  document.getElementById('s-choice').style.display='none';
+  const s=document.getElementById('s-sent'); s.style.display='block';
+  document.getElementById('s-sentval').textContent='내 답: '+v;
+}
+
+/* ================= 화면 그리기 ================= */
+function paint(fresh){ if(role==='t') paintTeacher(fresh); else if(role==='s') paintStudent(fresh); }
+
+function show(id,on){ const e=document.getElementById(id); if(e) e.style.display=on?'block':'none'; }
+
+function bonusHTML(q){
+  if(!q||q.type===1||!q.mult||q.mult<2) return '';
+  return q.mult===2 ? '<span class="bonus x2">⚡ 점수 두 배! 잘 맞히면 이득</span>'
+                    : '<span class="bonus x3">🔥 점수 세 배! 지금이 뒤집을 기회</span>';
+}
+function qMediaHTML(q){ return q.img? '<img class="qimg" src="'+q.img+'">':''; }
+
+function paintTeacher(fresh){
+  if(!st) return;
+  show('t-lobby', st.phase==='lobby'); show('t-play', st.phase==='q');
+  show('t-closed', st.phase==='closed'); show('t-final', st.phase==='final');
+  if(st.phase!=='lobby'){ document.getElementById('t-joinpanel').style.display='none';
+    document.getElementById('btn-joinpanel').textContent='참여 링크 보기'; }
+  document.getElementById('t-prog').style.display = (st.phase==='q'||st.phase==='closed')?'inline-block':'none';
+  if(st.qIndex>=0 && st.qIndex<quiz.length) document.getElementById('t-prog').textContent=(st.qIndex+1)+' / '+quiz.length;
+
+  if(st.phase==='q' && fresh){
+    const q=quiz[st.qIndex];
+    document.getElementById('t-qnum').textContent=(st.qIndex+1)+'번 · '+TYPENAME[q.type]+(q.type!==1?' · '+q.points+'점':'');
+    document.getElementById('t-bonus').innerHTML=bonusHTML(q);
+    document.getElementById('t-qtext').textContent=q.text||'';
+    const im=document.getElementById('t-qimg');
+    if(q.img){im.src=q.img;im.style.display='block';}else im.style.display='none';
+    const ob=document.getElementById('t-opts'); ob.innerHTML='';
+    if(q.type===3){ ob.style.display='grid';
+      q.opts.forEach((o,i)=>{ const d=document.createElement('div'); d.className='opt';
+        d.innerHTML='<div class="k">'+(i+1)+'</div><div>'+(o.img?'<img src="'+o.img+'">':'')+
+          (o.text?'<div>'+esc(o.text)+'</div>':'')+'</div>'; ob.appendChild(d); });
+    } else ob.style.display='none';
+    document.getElementById('cloud').style.display = q.type===1?'block':'none';
+    document.getElementById('t-answered').style.display = q.type===1?'none':'inline-block';
+    document.getElementById('t-timer').style.display = (q.type!==1&&q.time>0)?'grid':'none';
+    const c=document.getElementById('t-playctrl'); c.innerHTML='';
+    if(q.type===1){
+      c.innerHTML='<button class="btn btn-main" onclick="nextQuestion()">다음 문제로</button>';
+    }else{
+      c.innerHTML='<button class="btn btn-hot" onclick="closeQuestion()">'+(q.time>0?'지금 마감하고 채점':'문제 종료하고 채점')+'</button>';
+    }
+    if(q.type!==1 && q.time>0){ clearTimeout(autoTO); autoTO=setTimeout(()=>closeQuestion(), Math.max(0,st.deadline-Date.now())+150); }
+    paintCloud(); paintAnswers();
+  }
+
+  if(st.phase==='closed' && fresh){
+    const q=quiz[st.qIndex], r=st.reveal||{};
+    document.getElementById('t-revealttl').textContent='정답 · '+(st.qIndex+1)+'번';
+    document.getElementById('t-reveal').textContent = q.type===3 ? (r.idx+1)+'번 — '+(r.text||'') : (r.text||'');
+    const c=document.getElementById('t-closedctrl');
+    c.innerHTML = (st.qIndex+1<quiz.length)
+      ? '<button class="btn btn-main" onclick="nextQuestion()">다음 문제로</button>'
+      : '<button class="btn btn-go" onclick="finishQuiz()">최종 결과 발표</button>';
+    renderRank(document.getElementById('t-rank'), board().slice(0,5));
+  }
+
+  if(st.phase==='final'){ renderRank(document.getElementById('t-fullrank'), board()); runCeremony('t-drum','t-podium'); }
+  paintPlayers();
+}
+
+function paintStudent(fresh){
+  if(!st) return;
+  show('st-wait', st.phase==='lobby'); show('st-play', st.phase==='q');
+  show('st-closed', st.phase==='closed'); show('st-final', st.phase==='final');
+  const me=players[uid]||{}; document.getElementById('s-score').textContent=(me.score||0)+'점';
+
+  if(st.phase==='q' && fresh){
+    const q=pub[st.qIndex]; if(!q) return;
+    document.getElementById('s-qnum').textContent=(st.qIndex+1)+'번 · '+TYPENAME[q.type]+(q.type!==1?' · '+q.points+'점':'');
+    document.getElementById('s-bonus').innerHTML=bonusHTML(q);
+    document.getElementById('s-qtext').textContent=q.text||'';
+    const im=document.getElementById('s-qimg');
+    if(q.img){im.src=q.img;im.style.display='block';}else im.style.display='none';
+    document.getElementById('s-sent').style.display='none';
+    show('s-word', q.type===1); show('s-short', q.type===2);
+    const ch=document.getElementById('s-choice');
+    ch.style.display = q.type===3?'grid':'none'; ch.innerHTML='';
+    if(q.type===3){
+      q.opts.forEach((o,i)=>{ const b=document.createElement('button'); b.className='opt';
+        b.innerHTML='<div class="k">'+(i+1)+'</div><div>'+(o.img?'<img src="'+o.img+'">':'')+
+          (o.text?'<div>'+esc(o.text)+'</div>':'')+'</div>';
+        b.onclick=()=>sendChoice(i); ch.appendChild(b); });
+    }
+    if(q.type===2){ document.getElementById('s-shortin').value=''; }
+    document.getElementById('s-timer').style.display=(q.type!==1&&q.time>0)?'grid':'none';
+    if(q.type===1){ document.getElementById('s-wordin').value=''; paintCloud(); }
+  }
+
+  if(st.phase==='closed'){ tryVerdict(); renderRank(document.getElementById('s-rank'), board().slice(0,5), uid); }
+
+  if(st.phase==='final'){
+    const all=board(), mi=all.findIndex(x=>x.uid===uid);
+    renderRank(document.getElementById('s-myrank'), mi>=0?[all[mi]]:[], uid, mi>=0?mi+1:1);
+    runCeremony('s-drum','s-podium');
+  }
+}
+
+let verdictKey='';
+function tryVerdict(){
+  if(role!=='s'||!st||st.phase!=='closed') return;
+  const key='v'+st.qIndex; if(verdictKey===key) return;
+  const q=pub[st.qIndex]; if(!q) return;
+  const mine=answers[uid];
+  if(mine && mine.ok===undefined) return;      // 채점 결과가 아직 안 왔으면 기다립니다
+  verdictKey=key;
+  const r=st.reveal||{}, v=document.getElementById('s-verdict');
+  const ansText=esc(q.type===3?((r.idx+1)+'번 '+(r.text||'')):(r.text||''));
+  if(!mine){ v.className='verdict'; v.innerHTML='<div class="big" style="color:#BDB7F0">시간 끝!</div><div class="ans">정답: '+ansText+'</div>'; sfx.wrong(); }
+  else if(mine.ok){ v.className='verdict ok'; v.innerHTML='<div class="big">정답!</div><div class="gain">+'+(mine.gain||0)+'점</div>'+
+    (q.mult>1?'<div class="ans">'+q.mult+'배 문제라서 더 받았어요</div>':''); sfx.correct(); confetti(900); }
+  else { v.className='verdict no'; v.innerHTML='<div class="big">아쉬워요</div><div class="ans">정답: '+ansText+'</div>'; sfx.wrong(); }
+}
+
+function paintPlayers(){
+  const n=Object.keys(players).length;
+  if(role==='t'){
+    const c=document.getElementById('t-count'); if(c) c.textContent='참가 '+n+'명';
+    const box=document.getElementById('t-names');
+    if(box && st && st.phase==='lobby'){
+      const cur=box.children.length; box.innerHTML='';
+      Object.keys(players).forEach((u,i)=>{ const s=document.createElement('span');
+        s.className='chip'+(i>=cur?' new':''); s.textContent=players[u].nick; box.appendChild(s); });
+      document.getElementById('t-nonames').style.display=n?'none':'block';
+      if(n>cur) sfx.join();
+    }
+    paintAnswers();
+    if(st && st.phase==='closed') renderRank(document.getElementById('t-rank'), board().slice(0,5));
+  } else if(role==='s'){
+    const me=players[uid]; if(me) document.getElementById('s-score').textContent=(me.score||0)+'점';
+    if(st && st.phase==='closed') renderRank(document.getElementById('s-rank'), board().slice(0,5), uid);
+  }
+}
+
+function paintAnswers(){
+  if(role!=='t'||!st||st.phase!=='q') return;
+  const q=quiz[st.qIndex]; if(!q||q.type===1) return;
+  const a=Object.keys(answers).length, p=Object.keys(players).length;
+  const el=document.getElementById('t-answered');
+  if(el) el.textContent='답변 '+a+' / '+p+'명';
+  if(p>0 && a>=p){ clearTimeout(autoTO); autoTO=setTimeout(()=>closeQuestion(),900); }
+}
+
+/* ---------- 타이머 ---------- */
+let lastSec=-1;
+function tickTimer(){
+  if(!st||st.phase!=='q'||!st.deadline){ lastSec=-1; return; }
+  const left=Math.max(0,st.deadline-Date.now());
+  const sec=Math.ceil(left/1000);
+  const q=(role==='t'?quiz:pub)[st.qIndex]; if(!q||!q.time) return;
+  const pct=Math.max(0,Math.min(100,(left/(q.time*1000))*100));
+  [document.getElementById('t-timer'),document.getElementById('s-timer')].forEach(t=>{
+    if(!t||t.style.display==='none') return;
+    t.style.setProperty('--p',pct+'%');
+    t.classList.toggle('warn',sec<=5);
+    t.querySelector('span').textContent=sec;
+  });
+  if(sec!==lastSec){ if(sec<=5&&sec>0) sfx.hurry(); else if(sec<=10&&sec>0) sfx.tick(); lastSec=sec; }
+}
+
+/* ---------- 단어 구름 ---------- */
+const PALETTE=['#FFD23F','#FF5D8F','#3DDC97','#9B8CFF','#5AC8FA','#FF9F45','#8DF3C6','#FFB3D1','#C9F24D'];
+function paintCloud(){
+  const list=Object.values(words||{}).map(x=>x.w).filter(Boolean);
+  const count={};
+  list.forEach(w=>{ const k=w.trim(); if(!k) return; count[k]=(count[k]||0)+1; });
+  const items=Object.keys(count).map(k=>({w:k,c:count[k]})).sort((a,b)=>b.c-a.c);
+  [['cloud',1],['scloud',.72]].forEach(([id,scale])=>{
+    const el=document.getElementById(id);
+    if(!el||el.offsetParent===null) return;
+    layoutCloud(el,items,scale);
+  });
+}
+function layoutCloud(box,items,scale){
+  box.innerHTML='';
+  if(!items.length){ box.innerHTML='<div class="emptycloud">친구들의 단어가 여기에 모입니다</div>'; return; }
+  const W=box.clientWidth, H=box.clientHeight, placed=[];
+  items.forEach((it,i)=>{
+    const size=Math.min(76,(20+(it.c-1)*13))*scale;
+    const el=document.createElement('span');
+    el.className='cw pop'; el.textContent=it.w;
+    el.style.fontSize=size.toFixed(0)+'px';
+    el.style.color=PALETTE[hash(it.w)%PALETTE.length];
+    el.style.zIndex=String(100-i);
+    if(it.c>1){ const b=document.createElement('sup');
+      b.textContent=it.c; b.style.cssText='font-size:.45em;opacity:.75;margin-left:4px'; el.appendChild(b); }
+    box.appendChild(el);
+    const w=el.offsetWidth, h=el.offsetHeight;
+    let x=(W-w)/2, y=(H-h)/2, ok=false, ang=Math.random()*6.28, r=0;
+    for(let s=0;s<1400;s++){
+      x=W/2+r*Math.cos(ang)-w/2; y=H/2+r*Math.sin(ang)*.62-h/2;
+      if(x>=4&&y>=4&&x+w<=W-4&&y+h<=H-4&&!hit(placed,x,y,w,h)){ ok=true; break; }
+      ang+=.4; r+=.9;
+    }
+    if(!ok){ el.remove(); return; }
+    placed.push({x,y,w,h});
+    el.style.left=x+'px'; el.style.top=y+'px';
+  });
+}
+function hit(list,x,y,w,h){ return list.some(p=>!(x+w+5<p.x||x>p.x+p.w+5||y+h+3<p.y||y>p.y+p.h+3)); }
+function hash(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; }
+window.addEventListener('resize',()=>{ if(st&&st.phase==='q') paintCloud(); });
+
+/* ---------- 순위 ---------- */
+function board(){
+  return Object.keys(players).map(u=>({uid:u,nick:players[u].nick||'익명',score:players[u].score||0}))
+    .sort((a,b)=> b.score-a.score || a.nick.localeCompare(b.nick));
+}
+function renderRank(el,list,meUid,forceNo){
+  if(!el) return; el.innerHTML='';
+  if(!list.length){ el.innerHTML='<p class="hint">아직 점수가 없습니다.</p>'; return; }
+  list.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='rankrow'+(meUid&&p.uid===meUid?' me':'');
+    d.innerHTML='<div class="n">'+(forceNo||i+1)+'</div><div class="nm">'+esc(p.nick)+'</div><div class="sc">'+p.score+'점</div>';
+    el.appendChild(d);
+  });
+}
+
+/* ---------- 시상식 ---------- */
+function runCeremony(drumId,podId){
+  const key=roomCode+'#final';
+  if(ceremonyKey===key) return;
+  ceremonyKey=key;
+  ceremony(drumId,podId);
+}
+function replayCeremony(){ ceremonyKey=''; runCeremony('t-drum','t-podium'); }
+function ceremony(drumId,podId){
+  const top=board().slice(0,3);
+  const drum=document.getElementById(drumId), pod=document.getElementById(podId);
+  pod.innerHTML=''; drum.textContent='';
+  const order=[2,1,0];
+  const slots={};
+  [1,0,2].forEach(i=>{ // 화면 배치: 2위 - 1위 - 3위
+    if(!top[i]) return;
+    const d=document.createElement('div'); d.className='pod p'+(i+1);
+    d.innerHTML='<div class="who">'+esc(top[i].nick)+'</div><div class="sc">'+top[i].score+'점</div>'+
+                '<div class="block">'+(i===0?'🥇':i===1?'🥈':'🥉')+'</div>';
+    pod.appendChild(d); slots[i]=d;
+  });
+  if(!top.length){ drum.textContent='참가한 학생이 없습니다'; return; }
+  const msgs=['두구두구두구…','과연 오늘의 1등은?','결과 나왔습니다!'];
+  let m=0;
+  sfx.drum();
+  const mi=setInterval(()=>{ drum.textContent=msgs[m%msgs.length]; m++; if(m>3) clearInterval(mi); },700);
+  setTimeout(()=>{ if(slots[2]){slots[2].classList.add('show'); sfx.reveal();} },2600);
+  setTimeout(()=>{ if(slots[1]){slots[1].classList.add('show'); sfx.reveal();} },3800);
+  setTimeout(()=>{
+    drum.textContent='🏆 오늘의 1등 '+top[0].nick+' 🏆';
+    if(slots[0]) slots[0].classList.add('show');
+    sfx.fanfare(); confetti(4200);
+  },5200);
+}
+
+/* ---------- 축포 ---------- */
+const cvs=document.getElementById('confetti'), cx=cvs.getContext('2d');
+let parts=[], conf=null;
+function fitCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; }
+fitCanvas(); addEventListener('resize',fitCanvas);
+function confetti(ms){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const n=Math.min(220,Math.round(ms/18));
+  for(let i=0;i<n;i++) parts.push({
+    x:Math.random()*cvs.width, y:-20-Math.random()*cvs.height*.4,
+    vx:(Math.random()-.5)*3, vy:2+Math.random()*4,
+    s:5+Math.random()*8, r:Math.random()*6.28, vr:(Math.random()-.5)*.3,
+    c:PALETTE[(Math.random()*PALETTE.length)|0]
+  });
+  if(!conf) conf=requestAnimationFrame(step);
+  clearTimeout(confetti._t); confetti._t=setTimeout(()=>{},ms);
+}
+function step(){
+  cx.clearRect(0,0,cvs.width,cvs.height);
+  parts=parts.filter(p=>p.y<cvs.height+30);
+  parts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.03; p.r+=p.vr;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r); cx.fillStyle=p.c;
+    cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); cx.restore();
+  });
+  if(parts.length) conf=requestAnimationFrame(step);
+  else { cx.clearRect(0,0,cvs.width,cvs.height); conf=null; }
+}
+</script>
+</body>
+</html>
