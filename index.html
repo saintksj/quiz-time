@@ -59,6 +59,13 @@ button{font-family:inherit}
 .pick .d{font-size:15px; color:#BDB7F0; margin-top:6px; display:block; font-weight:500}
 
 /* ---- 공통 요소 ---- */
+.sign{display:flex; align-items:center; justify-content:center; gap:16px; max-width:460px; margin:40px auto 0}
+.sign i{flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4))}
+.sign i.r{background:linear-gradient(90deg,rgba(255,255,255,.4),transparent)}
+.sign span{font-size:15px; font-weight:600; color:#B4AEEB; letter-spacing:.08em; white-space:nowrap}
+.sign b{font-weight:900; letter-spacing:.02em;
+  background:linear-gradient(100deg,var(--yellow),var(--coral) 60%,var(--lav));
+  -webkit-background-clip:text; background-clip:text; color:transparent}  
 .card{background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:var(--r-soft); padding:20px; margin-bottom:16px; backdrop-filter:blur(6px)}
 .card h3{font-size:17px; color:#CFC9FF; font-weight:700; margin-bottom:14px}
 label{display:block; font-size:15px; font-weight:700; color:#CFC9FF; margin:0 0 7px}
@@ -219,6 +226,7 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
       <span class="d">어떤 기기로든 방 번호와 닉네임만 입력하세요</span>
     </button>
   </div>
+  <div class="sign"><i></i><span>made by <b>권성자샘</b></span><i class="r"></i></div>
   <div class="card" id="setup-note" style="margin-top:34px; display:none">
     <div class="setup-warn" id="setup-note-body"></div>
   </div>
