@@ -193,7 +193,6 @@ select option{background:#1A1550}
 .pod.show{opacity:1; transform:none; transition:all .7s cubic-bezier(.2,.9,.3,1.2)}
 .pod .who{font-size:clamp(17px,2.6vw,24px); font-weight:900; margin-bottom:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .pod .sc{font-weight:800; color:#D8D2FF; margin-bottom:10px; font-size:16px}
-.pod .sc .tsec{font-weight:600; font-size:13px; color:#A9A2DC; font-variant-numeric:tabular-nums}
 .pod .block{border-radius:16px 16px 0 0; display:grid; place-items:center; font-size:40px; font-weight:900; color:#241800}
 .pod.p1 .block{background:linear-gradient(180deg,var(--yellow),#FFB03A); height:210px}
 .pod.p2 .block{background:linear-gradient(180deg,#E6EBFF,#B9C3E8); height:155px}
@@ -265,7 +264,6 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
     <input type="password" id="tpw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')teacherLogin()">
     <div class="err" id="tpw-err"></div>
     <button class="btn btn-main btn-block" style="margin-top:6px" onclick="teacherLogin()">들어가기</button>
-    <p class="hint" style="margin-top:14px">비밀번호는 해시로만 저장되어 코드에 드러나지 않습니다. 바꾸려면 새 비밀번호를 위 칸에 적고 <strong>‘선생님 확인’ 제목을 5번 클릭</strong>해 나온 값을 <code class="k">TEACHER_PASSWORD_HASH</code> 에 넣으세요.</p>
   </div>
 </section>
 
@@ -372,7 +370,7 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
       <p class="hint" id="t-nonames">아직 아무도 들어오지 않았습니다.</p>
     </div>
     <div class="sticky-ctrl">
-      <div class="bigstat" id="t-joinstat"><div class="num" id="t-joinnum">0</div><div class="lbl2">명 접속</div></div>
+      <div class="bigstat" id="t-joinstat"><div class="num" id="t-joinnum">0</div><div class="lbl2">명 참가</div></div>
       <button class="btn btn-go" onclick="startQuiz()">퀴즈 시작</button>
     </div>
   </div>
@@ -1405,8 +1403,7 @@ function ceremony(drumId,podId){
   [1,0,2].forEach(i=>{ // 화면 배치: 2위 - 1위 - 3위
     if(!top[i]) return;
     const d=document.createElement('div'); d.className='pod p'+(i+1);
-    const tm = (role==='t' && top[i].tsum>0) ? ' <span class="tsec">'+fmtSec(top[i].tsum)+'</span>' : '';
-    d.innerHTML='<div class="who">'+esc(top[i].nick)+'</div><div class="sc">'+top[i].score+'점'+tm+'</div>'+
+    d.innerHTML='<div class="who">'+esc(top[i].nick)+'</div><div class="sc">'+top[i].score+'점</div>'+
                 '<div class="block">'+(i===0?'🥇':i===1?'🥈':'🥉')+'</div>';
     pod.appendChild(d); slots[i]=d;
   });
