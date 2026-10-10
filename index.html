@@ -890,13 +890,25 @@ async function openRoom(){
   const p=publicQuiz();
   const size=JSON.stringify(p).length;
   if(size>4000000){ alert('이미지가 너무 큽니다. 이미지를 줄이거나 개수를 줄여주세요.'); return; }
-  role='t';
-  roomCode=String(Math.floor(1000+Math.random()*9000));
-  await db.ref('rooms/'+roomCode).set({
-    info:{createdAt:firebase.database.ServerValue.TIMESTAMP},
-    quiz:p,
-    state:{phase:'lobby', qIndex:-1, deadline:0}
-  });
+  // 방 주인 표시(owner)는 로그인된 ID와 같아야 보안 규칙을 통과하므로, 로그인이 끝나길 기다립니다.
+  if(USE_ANONYMOUS_AUTH){
+    try{ await withTimeout(authP,8000); }catch(e){}
+    if(authState!=='ok' || !firebase.auth().currentUser){
+      alert('로그인이 아직 안 되었어요. 인터넷 연결을 확인하고 잠시 뒤 다시 눌러 주세요.'); return;
+    }
+    uid=firebase.auth().currentUser.uid;
+  }
+  const newCode=String(Math.floor(1000+Math.random()*9000));
+  try{
+    await db.ref('rooms/'+newCode).set({
+      info:{createdAt:firebase.database.ServerValue.TIMESTAMP, owner:uid},
+      quiz:p,
+      state:{phase:'lobby', qIndex:-1, deadline:0}
+    });
+  }catch(e){
+    alert('방을 만들지 못했어요. 한 번 더 눌러 주세요.\n(방 번호가 겹쳤거나 인터넷이 불안정할 수 있어요.)'); return;
+  }
+  role='t'; roomCode=newCode;
   localStorage.setItem('qz_room',roomCode);
   // 방 생성 시각만 따로 가벼운 색인에 기록합니다. 실패해도 수업에는 영향이 없습니다.
   db.ref('roomIndex/'+roomCode).set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{});
