@@ -257,7 +257,7 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
     <button onclick="go('s-sjoin')">
       <span class="em">✋</span>
       <span class="t">참여자로 입장</span>
-      <span class="d">어떤 기기로든 방 번호와 이름만 입력하세요</span>
+      <span class="d">어떤 기기로든 방 번호와 닉네임만 입력하세요</span>
     </button>
   </div>
   <div class="sign"><i></i><span>made by <b>권성자샘</b></span><i class="r"></i></div>
@@ -444,8 +444,8 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
     <h3>퀴즈방 입장</h3>
     <label for="s-code">방 번호</label>
     <input type="text" id="s-code" inputmode="numeric" maxlength="6" placeholder="예) 4821" style="font-size:26px; letter-spacing:.16em; text-align:center; font-weight:900">
-    <label for="s-nick" style="margin-top:16px">이름</label>
-    <input type="text" id="s-nick" maxlength="12" placeholder="화면에 보일 이름" onkeydown="if(event.key==='Enter')joinRoom()">
+    <label for="s-nick" style="margin-top:16px">닉네임</label>
+    <input type="text" id="s-nick" maxlength="12" placeholder="화면에 보일 닉네임" onkeydown="if(event.key==='Enter')joinRoom()">
     <div class="err" id="s-err"></div>
     <button class="btn btn-go btn-block" style="margin-top:6px" onclick="joinRoom()" id="btn-join">입장하기</button>
   </div>
@@ -455,7 +455,7 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
 <!-- ===== 학생 진행 ===== -->
 <section class="screen" id="s-slive">
   <div class="livebar">
-    <div><div class="lbl">내 이름</div><div style="font-weight:900; font-size:22px" id="s-me"></div></div>
+    <div><div class="lbl">내 닉네임</div><div style="font-weight:900; font-size:22px" id="s-me"></div></div>
     <div style="flex:1"></div>
     <div class="pill" id="s-score">0점</div>
   </div>
@@ -536,7 +536,7 @@ const firebaseConfig = {
 // 선생님 화면 비밀번호는 해시(SHA-256)로만 저장합니다. 원래 비밀번호는 코드에 남지 않습니다.
 // 비밀번호를 바꾸려면: 선생님 로그인 화면에서 새 비밀번호를 입력창에 적고 "선생님 확인" 제목을
 // 5번 연속 클릭하면 해시값이 나옵니다. 그 값을 아래에 붙여넣으세요.
-const TEACHER_PASSWORD_HASH = "9347c0c9a9a77d1df666d472577afdf194993199ff30713910b6766b2bd71aa8";
+const TEACHER_PASSWORD_HASH = "09bf283c305f8dc0dcad22b96fbca6795c0c62698b75abed2c0315418f07e8ac";
 const USE_ANONYMOUS_AUTH = true;   // Firebase 인증 > 익명 로그인을 켰다면 true
 
 /* ========================================================== */
@@ -1105,7 +1105,7 @@ async function joinRoom(){
   const nick=document.getElementById('s-nick').value.trim().slice(0,12);
   const err=document.getElementById('s-err'); err.textContent='';
   if(code.length<4){ err.textContent='방 번호 4자리를 입력해 주세요.'; return; }
-  if(!nick){ err.textContent='이름을 입력해 주세요.'; return; }
+  if(!nick){ err.textContent='닉네임을 입력해 주세요.'; return; }
   if(!joinBtnText) joinBtnText=btn.textContent;
   btn.disabled=true; btn.textContent='접속하는 중이에요…';
   try{
