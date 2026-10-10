@@ -322,9 +322,9 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
         <div><label for="e-mul">점수 배수</label>
           <select id="e-mul"><option value="1">1배 (기본)</option><option value="2">2배!</option><option value="3">3배!!</option></select>
         </div>
-        <div><label for="e-time">제한 시간(초)</label><input type="number" id="e-time" value="20" min="0" step="5"></div>
+        <div><label for="e-time">제한 시간(초)</label><input type="number" id="e-time" value="0" min="0" step="5"></div>
       </div>
-      <p class="hint" style="margin-top:8px">제한 시간을 <strong>0</strong>으로 두면 선생님이 직접 끝낼 때까지 기다립니다.</p>
+      <p class="hint" style="margin-top:8px">제한 시간은 기본값 <strong>0</strong>(제한 없음)이에요. 선생님이 직접 끝낼 때까지 기다립니다. 시간을 두고 싶을 때만 초 단위로 입력하세요.</p>
     </div>
 
     <div class="err" id="e-err"></div>
@@ -803,7 +803,7 @@ function resetEditor(){
   document.getElementById('e-ans').value='';
   document.getElementById('e-pt').value=100;
   document.getElementById('e-mul').value=1;
-  document.getElementById('e-time').value=20;
+  document.getElementById('e-time').value=0;
   document.getElementById('e-img-prev').style.display='none';
   document.getElementById('e-img-del').style.display='none';
   document.getElementById('e-err').textContent='';
@@ -957,7 +957,7 @@ function watchQuestion(i){
   const af=ar.on('value',s=>{
     if(role==='s'){ const v=s.val(); answers = v ? {[uid]:v} : {}; }
     else answers=s.val()||{};
-    paintAnswers(); tryVerdict(); paintAnswerGroups(); });
+    paintAnswers(); tryVerdict(); paintAnswerGroups(); lockIfAnswered(); });
   refs.push({ref:ar,ev:'value',cb:af});
   const wr=db.ref('rooms/'+roomCode+'/words/'+i);
   const wf=wr.on('value',s=>{ const v=s.val()||{}; const grew=Object.keys(v).length>Object.keys(words).length; words=v; paintCloud(); if(grew)sfx.word();
@@ -1156,12 +1156,12 @@ function unlockWord(){
 }
 function sendShort(){
   const el=document.getElementById('s-shortin'); const v=el.value.trim();
-  if(!v||!st) return;
+  if(!v||!st||answers[uid]) return;      // 이미 낸 답은 바꾸지 않습니다
   db.ref('rooms/'+roomCode+'/answers/'+st.qIndex+'/'+uid).set({v:v, n:myNick, at:firebase.database.ServerValue.TIMESTAMP});
   sfx.send(); showSent(v);
 }
 function sendChoice(i){
-  if(!st) return;
+  if(!st||answers[uid]) return;          // 이미 낸 답은 바꾸지 않습니다
   db.ref('rooms/'+roomCode+'/answers/'+st.qIndex+'/'+uid).set({v:i, n:myNick, at:firebase.database.ServerValue.TIMESTAMP});
   sfx.send();
   document.querySelectorAll('#s-choice .opt').forEach((b,k)=>{ b.classList.toggle('picked',k===i); b.disabled=true; });
@@ -1173,6 +1173,19 @@ function showSent(v){
   document.getElementById('s-choice').style.display='none';
   const s=document.getElementById('s-sent'); s.style.display='block';
   document.getElementById('s-sentval').textContent='내 답: '+v;
+}
+// 이미 답을 낸 문제라면(새로고침·재접속 포함) 선택지를 다시 열지 않고 '제출 완료'로 보여줍니다
+function lockIfAnswered(){
+  if(role!=='s'||!st||st.phase!=='q') return;
+  const q=pub[st.qIndex]; if(!q||q.type===1) return;
+  const mine=answers[uid]; if(!mine) return;
+  const sent=document.getElementById('s-sent');
+  if(sent && sent.style.display==='block') return;      // 이미 제출 완료로 표시 중
+  if(q.type===3){
+    const i=Number(mine.v), o=q.opts&&q.opts[i];
+    document.querySelectorAll('#s-choice .opt').forEach((b,k)=>{ b.classList.toggle('picked',k===i); b.disabled=true; });
+    showSent(o ? (o.text || (i+1)+'번') : (i+1)+'번');
+  } else showSent(mine.v);
 }
 
 /* ================= 화면 그리기 ================= */
@@ -1266,6 +1279,7 @@ function paintStudent(fresh){
     if(q.type===2){ document.getElementById('s-shortin').value=''; }
     document.getElementById('s-timer').style.display=(q.type!==1&&q.time>0)?'grid':'none';
     if(q.type===1){ document.getElementById('s-wordin').value=''; unlockWord(); paintCloud(); }
+    lockIfAnswered();
   }
 
   if(st.phase==='closed'){ tryVerdict(); renderRank(document.getElementById('s-rank'), board().slice(0,5), uid); }
