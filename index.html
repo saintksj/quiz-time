@@ -106,9 +106,10 @@ select option{background:#1A1550}
 .tag.t1{background:rgba(90,200,250,.2); color:#9BE0FF}
 .tag.t2{background:rgba(61,220,151,.2); color:#8DF3C6}
 .tag.t3{background:rgba(155,140,255,.24); color:#CFC6FF}
+.tag.t4{background:rgba(255,93,143,.22); color:#FFB3CC}
 .tag.x2{background:var(--yellow); color:#3A2700}
 .tag.x3{background:var(--coral); color:#fff}
-.typepick{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px}
+.typepick{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px}
 @media(max-width:560px){.typepick{grid-template-columns:1fr}}
 .typepick button{padding:13px 10px; border-radius:14px; border:2px solid var(--line); background:rgba(255,255,255,.05); color:#CFC9FF; cursor:pointer; font-weight:800; font-size:17px; text-align:left}
 .typepick button.sel{border-color:var(--yellow); background:rgba(255,210,63,.14); color:#fff}
@@ -154,6 +155,13 @@ select option{background:#1A1550}
 .opt:hover{transform:translateY(-2px)}
 .opt .k{width:44px; height:44px; flex:0 0 44px; border-radius:50%; display:grid; place-items:center; font-weight:900; font-size:22px; color:#160D45}
 .opt:nth-child(1) .k{background:var(--sky)} .opt:nth-child(2) .k{background:var(--coral)} .opt:nth-child(3) .k{background:var(--mint)}
+/* O/X 문제: 큰 두 칸 */
+.opts.ox{grid-template-columns:1fr 1fr}
+.opt.oxopt{justify-content:center; padding:30px 10px; font-size:76px; font-weight:900; line-height:1}
+.opt.oxopt.o{color:#6FD3FF} .opt.oxopt.x{color:#FF7DA3}
+.oxpick{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.oxpick button{padding:18px 10px; border-radius:16px; border:2px solid var(--line); background:rgba(255,255,255,.06); color:#CFC9FF; font-size:44px; font-weight:900; cursor:pointer}
+.oxpick button.sel{border-color:var(--mint); background:rgba(61,220,151,.2); color:#fff}
 .opt img{max-height:150px; max-width:100%; border-radius:10px; display:block}
 .opt.picked{border-color:var(--yellow); background:rgba(255,210,63,.16)}
 .opt.right{border-color:var(--mint); background:rgba(61,220,151,.2)}
@@ -297,6 +305,7 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
       <button data-t="1" onclick="setType(1)"><span>💭 생각 모으기</span><small>단어를 모아 구름으로 · 점수 없음</small></button>
       <button data-t="2" onclick="setType(2)"><span>✏️ 주관식</span><small>답을 직접 입력</small></button>
       <button data-t="3" onclick="setType(3)"><span>🔢 객관식</span><small>보기 3개 중 고르기</small></button>
+      <button data-t="4" onclick="setType(4)"><span>⭕ O/X 퀴즈</span><small>맞으면 O, 틀리면 X</small></button>
     </div>
 
     <label for="e-text">질문</label>
@@ -308,6 +317,11 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
     <div id="e-opts" style="display:none; margin-top:18px">
       <label>보기 3개 (정답은 왼쪽 동그라미를 눌러 선택)</label>
       <div id="opt-edits"></div>
+    </div>
+
+    <div id="e-ox" style="display:none; margin-top:18px">
+      <label>정답을 눌러 선택해 주세요</label>
+      <div class="oxpick"><button type="button" data-ox="0" onclick="setOX(0)">O</button><button type="button" data-ox="1" onclick="setOX(1)">X</button></div>
     </div>
 
     <div id="e-answer" style="display:none; margin-top:18px">
@@ -717,14 +731,20 @@ function setType(t){
   ed.type=t;
   document.querySelectorAll('#typepick button').forEach(b=>b.classList.toggle('sel',+b.dataset.t===t));
   document.getElementById('e-opts').style.display = t===3?'block':'none';
+  document.getElementById('e-ox').style.display = t===4?'block':'none';
   document.getElementById('e-answer').style.display = t===2?'block':'none';
   document.getElementById('e-scoring').style.display = t===1?'none':'block';
   document.getElementById('e-text').placeholder = t===1
     ? '예) 오늘 배운 인공지능, 어떤 느낌이었나요?'
-    : (t===2 ? '예) 사람의 학습을 흉내 낸 기술을 무엇이라 하나요?' : '예) 다음 중 인공지능이 한 일은?');
+    : (t===2 ? '예) 사람의 학습을 흉내 낸 기술을 무엇이라 하나요?' : (t===4 ? '예) 인공지능은 실수를 할 수 있다. (O/X)' : '예) 다음 중 인공지능이 한 일은?'));
   if(t===3) renderOptEdits();
+  if(t===4){ if(ed.correct>1) ed.correct=0; renderOX(); }
 }
 
+function setOX(i){ ed.correct=i; renderOX(); }
+function renderOX(){
+  document.querySelectorAll('#e-ox button').forEach(b=>b.classList.toggle('sel',+b.dataset.ox===ed.correct));
+}
 function renderOptEdits(){
   const box=document.getElementById('opt-edits'); box.innerHTML='';
   ['1','2','3'].forEach((k,i)=>{
@@ -794,6 +814,10 @@ function saveQuestion(){
     q.opts=ed.opts.map(o=>({text:o.text||'', img:o.img||null}));
     q.correct=ed.correct;
   }
+  if(ed.type===4){
+    q.opts=[{text:'O',img:null},{text:'X',img:null}];
+    q.correct=(ed.correct===1)?1:0;
+  }
   if(ed.idx>=0) quiz[ed.idx]=q; else quiz.push(q);
   saveLocal(); renderQList(); resetEditor(); sfx.send();
 }
@@ -814,7 +838,7 @@ function resetEditor(){
 function editQuestion(i){
   const q=quiz[i];
   ed.idx=i; ed.img=q.img||null; ed.correct=q.correct||0;
-  ed.opts = q.opts? q.opts.map(o=>({text:o.text,img:o.img})) : [{text:'',img:null},{text:'',img:null},{text:'',img:null}];
+  ed.opts = (q.opts && q.type===3)? q.opts.map(o=>({text:o.text,img:o.img})) : [{text:'',img:null},{text:'',img:null},{text:'',img:null}];
   setType(q.type);
   document.getElementById('e-text').value=q.text||'';
   document.getElementById('e-ans').value=q.answer||'';
@@ -832,7 +856,7 @@ function editQuestion(i){
 function delQuestion(i){ if(!confirm((i+1)+'번 문제를 지울까요?')) return; quiz.splice(i,1); saveLocal(); renderQList(); }
 function moveQ(i,d){ const j=i+d; if(j<0||j>=quiz.length) return; const t=quiz[i]; quiz[i]=quiz[j]; quiz[j]=t; saveLocal(); renderQList(); }
 
-const TYPENAME={1:'생각 모으기',2:'주관식',3:'객관식'};
+const TYPENAME={1:'생각 모으기',2:'주관식',3:'객관식',4:'O/X 퀴즈'};
 function renderQList(){
   const box=document.getElementById('qlist'); box.innerHTML='';
   document.getElementById('qcount').textContent=quiz.length+'개';
@@ -847,6 +871,7 @@ function renderQList(){
       meta+=' · '+(q.time>0? q.time+'초':'시간 무제한');
       if(q.type===2) meta+=' · 정답 '+q.answer;
       if(q.type===3) meta+=' · 정답 '+(q.correct+1)+'번';
+      if(q.type===4) meta+=' · 정답 '+(q.correct===1?'X':'O');
     } else meta+='실시간 단어 구름';
     d.innerHTML='<div class="no">'+(i+1)+'</div><div class="body"><div class="ttl">'+
       (q.text? esc(q.text) : '(이미지 문제)')+(q.img?' 🖼':'')+'</div><div class="meta">'+meta+'</div></div>'+
@@ -880,7 +905,7 @@ function publicQuiz(){
   return quiz.map(q=>{
     const o={type:q.type, text:q.text||'', img:q.img||null};
     if(q.type!==1){ o.points=q.points; o.mult=q.mult; o.time=q.time; }
-    if(q.type===3) o.opts=q.opts.map(x=>({text:x.text||'', img:x.img||null}));
+    if(q.type===3||q.type===4) o.opts=q.opts.map(x=>({text:x.text||'', img:x.img||null}));
     return o;
   });
 }
@@ -1028,7 +1053,7 @@ async function closeQuestion(){
   });
   up['rooms/'+roomCode+'/state/phase']='closed';
   up['rooms/'+roomCode+'/state/deadline']=0;
-  up['rooms/'+roomCode+'/state/reveal']= q.type===3
+  up['rooms/'+roomCode+'/state/reveal']= (q.type===3||q.type===4)
     ? {idx:q.correct, text:(q.opts[q.correct].text || (q.correct+1)+'번 그림')}
     : {text:q.answer};
   await db.ref().update(up);
@@ -1075,7 +1100,7 @@ function showRoomClosed(){
 }
 function norm(s){ return (s==null?'':String(s)).trim().toLowerCase().replace(/\s+/g,''); }
 function judge(q,v){
-  if(q.type===3) return Number(v)===Number(q.correct);
+  if(q.type===3||q.type===4) return Number(v)===Number(q.correct);
   return String(q.answer||'').split(/[,/]/).map(norm).filter(Boolean).indexOf(norm(v))>=0;
 }
 /* 문제가 뜬 순간(서버 시각)부터 답이 서버에 도착한 순간까지 걸린 시간(ms).
@@ -1193,7 +1218,7 @@ function lockIfAnswered(){
   const mine=answers[uid]; if(!mine) return;
   const sent=document.getElementById('s-sent');
   if(sent && sent.style.display==='block') return;      // 이미 제출 완료로 표시 중
-  if(q.type===3){
+  if(q.type===3||q.type===4){
     const i=Number(mine.v), o=q.opts&&q.opts[i];
     document.querySelectorAll('#s-choice .opt').forEach((b,k)=>{ b.classList.toggle('picked',k===i); b.disabled=true; });
     showSent(o ? (o.text || (i+1)+'번') : (i+1)+'번');
@@ -1230,7 +1255,10 @@ function paintTeacher(fresh){
     const im=document.getElementById('t-qimg');
     if(q.img){im.src=q.img;im.style.display='block';}else im.style.display='none';
     const ob=document.getElementById('t-opts'); ob.innerHTML='';
-    if(q.type===3){ ob.style.display='grid';
+    ob.classList.toggle('ox', q.type===4);
+    if(q.type===4){ ob.style.display='grid';
+      q.opts.forEach((o,i)=>{ const d=document.createElement('div'); d.className='opt oxopt '+(i===0?'o':'x'); d.textContent=o.text; ob.appendChild(d); });
+    } else if(q.type===3){ ob.style.display='grid';
       q.opts.forEach((o,i)=>{ const d=document.createElement('div'); d.className='opt';
         d.innerHTML='<div class="k">'+(i+1)+'</div><div>'+(o.img?'<img src="'+o.img+'">':'')+
           (o.text?'<div>'+esc(o.text)+'</div>':'')+'</div>'; ob.appendChild(d); });
@@ -1281,7 +1309,13 @@ function paintStudent(fresh){
     document.getElementById('s-sent').style.display='none';
     show('s-word', q.type===1); show('s-short', q.type===2);
     const ch=document.getElementById('s-choice');
-    ch.style.display = q.type===3?'grid':'none'; ch.innerHTML='';
+    ch.style.display = (q.type===3||q.type===4)?'grid':'none'; ch.innerHTML='';
+    ch.classList.toggle('ox', q.type===4);
+    if(q.type===4){
+      q.opts.forEach((o,i)=>{ const b=document.createElement('button'); b.className='opt oxopt '+(i===0?'o':'x');
+        b.textContent=o.text; b.setAttribute('aria-label', i===0?'O, 맞아요':'X, 아니에요');
+        b.onclick=()=>sendChoice(i); ch.appendChild(b); });
+    }
     if(q.type===3){
       q.opts.forEach((o,i)=>{ const b=document.createElement('button'); b.className='opt';
         b.innerHTML='<div class="k">'+(i+1)+'</div><div>'+(o.img?'<img src="'+o.img+'">':'')+
