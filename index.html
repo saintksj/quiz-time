@@ -75,7 +75,7 @@ input[type=text],input[type=password],input[type=number],textarea,select{
 }
 textarea{min-height:82px; resize:vertical; line-height:1.5}
 input:focus,textarea:focus,select:focus{border-color:var(--yellow); box-shadow:0 0 0 3px rgba(255,210,63,.22)}
-input::placeholder,textarea::placeholder{color:#8A85C4; font-weight:500}
+input::placeholder,textarea::placeholder{color:#B4AEEB; opacity:1; font-weight:500}
 select option{background:#1A1550}
 .row{display:flex; gap:10px; flex-wrap:wrap}
 .row>*{flex:1; min-width:120px}
@@ -477,9 +477,9 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
       <img class="qimg" id="s-qimg" style="display:none">
 
       <div id="s-word" style="display:none; margin-top:18px">
-        <div class="linkrow" id="s-wordrow">
-          <input type="text" id="s-wordin" maxlength="14" placeholder="떠오르는 단어 한 개" onkeydown="if(event.key==='Enter')sendWord()">
-          <button class="btn btn-main btn-sm" onclick="sendWord()">보내기</button>
+        <div class="linkrow" id="s-wordrow" style="flex-wrap:wrap">
+          <input type="text" id="s-wordin" maxlength="14" placeholder="떠오르는 단어 한 개" style="flex:100 1 150px; min-width:0" onkeydown="if(event.key==='Enter')sendWord()">
+          <button class="btn btn-main btn-sm" style="white-space:nowrap; flex:1 0 auto; padding:11px 24px" onclick="sendWord()">보내기</button>
         </div>
         <p class="hint" id="s-wordhint" style="margin-top:8px">단어는 한 개만 보낼 수 있어요. 다른 분들의 단어가 실시간으로 모여요.</p>
         <p class="hint" id="s-worddone" style="display:none; margin-top:8px; color:#8DF3C6; font-weight:700"></p>
