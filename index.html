@@ -704,7 +704,20 @@ async function teacherLogin(){
   if(h===null){ err.textContent='https 주소로 접속해 주세요. (파일을 직접 열면 확인할 수 없습니다)'; return; }
   if(h!==TEACHER_PASSWORD_HASH){ err.textContent='비밀번호가 다릅니다.'; return; }
   err.textContent='';
-  const saved=localStorage.getItem('qz_room');
+  let saved=localStorage.getItem('qz_room');
+  if(saved){
+    // 서버에 그 방이 실제로 남아 있는지 먼저 확인합니다 (이미 삭제된 방이면 묻지 않고 메모만 지웁니다)
+    // 확인이 안 되면(느린 인터넷 등) 예전처럼 물어봅니다
+    err.textContent='열려 있던 방을 확인하는 중…';
+    let gone=false;
+    try{
+      if(USE_ANONYMOUS_AUTH) await withTimeout(authP,8000);
+      const sn=await withTimeout(db.ref('rooms/'+saved+'/state').once('value'),8000);
+      gone=!sn.exists();
+    }catch(e){ console.warn('방 확인을 건너뜁니다:', e&&e.message); }
+    err.textContent='';
+    if(gone){ localStorage.removeItem('qz_room'); saved=null; }
+  }
   if(saved){
     if(confirm('열려 있던 '+saved+'번 방으로 다시 들어갈까요?')){ role='t'; roomCode=saved; enterRoomUI(); watchRoom(); return; }
     dropRoom(saved);                       // 다시 안 들어가면 그 방은 지웁니다
