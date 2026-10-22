@@ -126,6 +126,11 @@ select option{background:#1A1550}
 .code{font-size:30px; font-weight:900; letter-spacing:.14em; color:var(--yellow)}
 .livebar .lbl{font-size:17px; color:#A9A3DC; font-weight:700}
 .pill{background:rgba(255,255,255,.1); border-radius:999px; padding:8px 16px; font-weight:800; font-size:18px}
+.netdot{display:inline-flex; align-items:center; gap:8px; white-space:nowrap}
+.netdot::before{content:""; width:12px; height:12px; border-radius:50%; background:#8A85C4; flex:none}
+.netdot.on{color:var(--mint)} .netdot.on::before{background:var(--mint); box-shadow:0 0 8px var(--mint)}
+.netdot.off{color:#fff; background:rgba(255,93,143,.28)} .netdot.off::before{background:var(--coral); animation:netblink 1s infinite}
+@keyframes netblink{50%{opacity:.25}}
 .joinbox{display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center}
 @media(max-width:620px){.joinbox{grid-template-columns:1fr}}
 .linkrow{display:flex; gap:8px}
@@ -367,6 +372,7 @@ code.k{background:rgba(0,0,0,.35); padding:2px 7px; border-radius:6px; font-size
       <div class="code" id="t-code">----</div>
     </div>
     <div class="pill" id="t-count">참가 0명</div>
+    <div class="pill netdot" id="t-net" title="선생님 화면과 서버의 연결 상태">연결 확인 중…</div>
     <div class="pill" id="t-prog" style="display:none">1 / 1</div>
     <div style="flex:1"></div>
     <button class="btn btn-ghost btn-sm" onclick="toggleJoinPanel()" id="btn-joinpanel">참여 링크 보기</button>
@@ -640,6 +646,14 @@ function init(){
     db=firebase.database();
     // 기기 시계가 어긋나 있어도 모든 화면의 남은 시간이 같게 흐르도록 보정값을 받아둡니다
     db.ref('.info/serverTimeOffset').on('value', sn=>{ srvOffset=Number(sn.val())||0; });
+    // 선생님 화면 연결 표시등: 끊긴 상태가 1.5초 넘게 이어질 때만 빨간불 (잠깐 깜빡임 방지)
+    let netTO=null;
+    db.ref('.info/connected').on('value', sn=>{
+      const el=document.getElementById('t-net'); if(!el) return;
+      clearTimeout(netTO);
+      if(sn.val()===true){ el.className='pill netdot on'; el.textContent='연결됨'; }
+      else netTO=setTimeout(()=>{ el.className='pill netdot off'; el.textContent='재연결 중…'; },1500);
+    });
   }catch(e){ alert('Firebase 연결에 실패했습니다: '+e.message); return; }
 
   uid = localStorage.getItem('qz_uid') || ('u'+Math.random().toString(36).slice(2,10));
@@ -1366,7 +1380,7 @@ function paintPlayers(){
       document.getElementById('t-nonames').style.display=n?'none':'block';
       if(n>cur) sfx.join();
     }
-    paintAnswers();
+    paintAnswers(); paintBigStat();
     if(st && st.phase==='closed') renderRank(document.getElementById('t-rank'), board().slice(0,5));
   } else if(role==='s'){
     const me=players[uid]; if(me) document.getElementById('s-score').textContent=(me.score||0)+'점';
@@ -1407,7 +1421,7 @@ function paintBigStat(){
   const bar=document.getElementById('t-bigbar');
   if(q.type===1){
     setNum(document.getElementById('t-bignum'), Object.keys(words||{}).length);
-    document.getElementById('t-biglbl').textContent='개 단어 모임';
+    document.getElementById('t-biglbl').textContent='/ 참가 '+Object.keys(players||{}).length+'명';
     bar.style.display='none';
   }else{
     const a=Object.keys(answers||{}).length, p=Object.keys(players||{}).length;
